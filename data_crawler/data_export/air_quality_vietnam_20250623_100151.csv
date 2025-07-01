@@ -1,0 +1,99 @@
+﻿timestamp,city,province,city_source,latitude,longitude,aqi,pm25,pm10,o3,no2,so2,co,nh3,temperature,humidity,pressure,wind_speed,wind_direction,visibility,weather_condition,source,status
+2025-06-23 10:01:50,Tay Ninh,Tay Ninh,Tay Ninh (openweathermap),11.31,106.0983,1,4.51,5.5,28.67,5.65,2.52,224.3,1.86,30.66,61.0,1005.0,5.83,247.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:49,Ben Tre,Ben Tre,Ben Tre (openweathermap),10.2431,106.3756,1,2.26,3.4,34.09,2.45,0.49,131.45,0.97,29.34,74.0,1006.0,3.63,262.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:48,Tan An,Long An,Tan An (openweathermap),10.5439,106.4108,1,3.07,4.11,30.5,3.92,0.8,177.1,1.55,30.15,70.0,1005.0,4.27,263.0,6533.0,Clouds,openweathermap,
+2025-06-23 10:01:46,Di An,Binh Duong,Di An (openweathermap),10.9069,106.7722,1,5.46,6.61,24.98,7.63,2.22,268.76,2.47,30.6,67.0,1005.0,6.58,263.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:45,Phu Quoc,Kien Giang,Phu Quoc (openweathermap),10.2897,103.984,1,0.95,2.48,37.38,0.21,0.09,77.61,0.01,26.94,83.0,1007.0,6.79,287.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:44,Ha Tien,Kien Giang,Ha Tien (openweathermap),10.3831,104.4881,1,1.52,4.88,36.65,0.24,0.11,78.25,0.02,28.1,75.0,1007.0,9.02,276.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:43,Chau Doc,An Giang,Chau Doc (openweathermap),10.7011,105.1119,1,0.86,2.07,35.55,0.16,0.06,74.83,0.0,29.06,65.0,1006.0,5.81,277.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:42,Ca Mau,Ca Mau,Ca Mau (openweathermap),9.1767,105.1525,1,3.95,4.98,49.4,0.24,0.1,117.88,0.06,28.62,72.0,1007.0,4.08,281.0,10000.0,Rain,openweathermap,
+2025-06-23 10:01:41,Bac Lieu,Bac Lieu,Bac Lieu (openweathermap),9.2847,105.7244,1,5.52,9.24,47.52,0.32,0.13,118.2,0.18,29.24,70.0,1007.0,6.45,286.0,10000.0,Rain,openweathermap,
+2025-06-23 10:01:40,Soc Trang,Soc Trang,Soc Trang (openweathermap),9.6025,105.9803,1,4.05,7.51,42.37,0.67,0.2,107.75,0.31,28.74,73.0,1006.0,5.7,284.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:39,Tra Vinh,Tra Vinh,Tra Vinh (openweathermap),9.9514,106.3431,1,2.93,4.84,40.53,1.11,0.25,105.61,0.36,29.09,75.0,1006.0,4.69,267.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:38,Vinh Long,Vinh Long,Vinh Long (openweathermap),10.2397,105.9722,1,1.96,3.23,34.76,1.61,0.36,112.41,0.68,29.02,73.0,1006.0,5.8,273.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:36,Sa Dec,Dong Thap,Sa Dec (openweathermap),10.2922,105.7592,1,1.82,3.14,35.1,1.19,0.29,102.87,0.54,29.34,71.0,1006.0,6.8,265.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:35,Cao Lanh,Dong Thap,Cao Lanh (openweathermap),10.4592,105.6325,1,1.57,2.62,34.04,1.2,0.28,103.88,0.56,29.49,71.0,1006.0,5.74,257.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:34,Tuy Hoa,Phu Yen,Tuy Hoa (openweathermap),13.0833,109.3,1,3.09,3.5,21.48,4.57,0.75,173.99,0.86,30.99,65.0,1003.0,2.62,139.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:33,Quang Ngai,Quang Ngai,Quang Ngai (openweathermap),15.1194,108.7922,1,3.24,3.37,24.31,1.75,0.29,193.13,0.38,29.09,80.0,1003.0,2.1,66.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:32,Tam Ky,Quang Nam,Tam Ky (openweathermap),15.5736,108.4736,1,2.16,2.25,24.23,1.6,0.21,178.31,0.33,28.74,78.0,1003.0,1.49,43.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:31,Hoi An,Quang Nam,Hoi An (openweathermap),15.8801,108.338,1,3.61,3.91,16.23,3.18,0.48,216.09,0.69,29.31,74.0,1003.0,2.7,53.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:30,Dong Ha,Quang Tri,Dong Ha (openweathermap),16.8167,107.1,1,1.69,1.94,17.77,0.83,0.16,153.95,0.47,29.42,83.0,1002.0,3.82,106.0,10000.0,Rain,openweathermap,
+2025-06-23 10:01:29,Dong Hoi,Quang Binh,Dong Hoi (openweathermap),17.4833,106.6,1,2.97,3.13,25.2,1.0,0.14,147.13,0.55,29.41,83.0,1002.0,3.78,113.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:28,Thanh Hoa,Thanh Hoa,Thanh Hoa (openweathermap),19.8067,105.7851,1,3.4,3.69,32.02,1.39,0.19,182.26,0.83,30.43,72.0,1001.0,5.18,129.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:27,Viet Tri,Phu Tho,Viet Tri (openweathermap),21.3227,105.4024,1,5.41,5.85,31.05,1.57,0.33,227.91,1.21,30.69,76.0,1000.0,1.23,59.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:25,Uong Bi,Quang Ninh,Uong Bi (openweathermap),21.0358,106.7733,3,30.96,34.75,66.02,4.71,3.8,275.1,4.68,30.04,74.0,1002.0,3.97,134.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:24,Hung Yen,Hung Yen,Hung Yen (openweathermap),20.6464,106.0511,2,18.22,20.19,49.32,3.59,2.13,238.79,3.69,31.4,66.0,1001.0,4.23,140.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:23,Hai Duong,Hai Duong,Hai Duong (openweathermap),20.9373,106.3145,3,26.83,30.19,57.44,6.06,4.0,296.6,6.03,30.87,71.0,1001.0,5.31,127.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:22,Bac Ninh,Bac Ninh,Bac Ninh (openweathermap),21.1861,106.0763,2,21.21,23.52,51.78,4.55,2.61,276.17,4.29,30.99,71.0,1001.0,4.99,134.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:21,Ha Long,Quang Ninh,Ha Long (openweathermap),20.95,107.0833,3,27.05,30.6,63.47,0.9,0.69,204.48,1.37,29.15,80.0,1002.0,3.4,159.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:20,Ninh Binh,Ninh Binh,Ninh Binh (openweathermap),20.2506,105.9756,1,8.16,8.9,43.51,1.88,0.66,180.94,1.78,31.39,68.0,1001.0,4.59,143.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:19,Nam Dinh,Nam Dinh,Nam Dinh (openweathermap),20.4389,106.1621,2,15.19,16.73,48.31,2.87,1.57,214.61,3.02,31.02,68.0,1001.0,5.0,143.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:18,Thai Nguyen,Thai Nguyen,Thai Nguyen (openweathermap),21.5944,105.8487,2,14.99,16.36,44.97,4.27,1.52,291.46,3.01,30.59,79.0,1001.0,0.29,160.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:17,Phan Thiet,Binh Thuan,Phan Thiet (openweathermap),10.9289,108.1022,2,11.35,13.5,53.74,1.87,0.67,164.36,0.6,30.13,67.0,1005.0,5.93,265.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:15,Dalat,Lam Dong,Dalat (openweathermap),11.9404,108.4583,2,10.81,11.84,18.18,19.02,4.91,429.22,1.08,20.44,84.0,1008.0,1.77,279.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:14,Pleiku,Gia Lai,Pleiku (openweathermap),13.9833,108.0,1,4.69,4.76,21.82,1.25,0.15,196.24,0.1,25.03,77.0,1006.0,3.09,234.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:13,Rach Gia,Kien Giang,Rach Gia (openweathermap),10.0128,105.08,1,1.65,4.21,38.24,0.22,0.09,82.68,0.04,28.18,75.0,1007.0,9.26,275.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:12,Vinh,Nghe An,Vinh (openweathermap),18.6699,105.6816,1,5.89,6.15,22.77,2.7,0.26,243.55,0.69,30.6,74.0,1001.0,4.25,107.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:11,My Tho,Tien Giang,My Tho (openweathermap),10.36,106.3597,1,2.26,3.4,34.09,2.45,0.49,131.45,0.97,29.48,74.0,1006.0,3.77,263.0,6566.0,Clouds,openweathermap,
+2025-06-23 10:01:10,Long Xuyen,An Giang,Long Xuyen (openweathermap),10.3861,105.4348,1,1.67,3.26,35.85,0.86,0.22,95.28,0.37,29.27,71.0,1006.0,6.73,263.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:09,Thu Dau Mot,Binh Duong,Thu Dau Mot (openweathermap),10.9804,106.6519,1,5.46,6.61,24.98,7.63,2.22,268.76,2.47,30.6,67.0,1005.0,6.73,259.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:08,Vung Tau,Ba Ria Vung Tau,Vung Tau (openweathermap),10.4113,107.1364,1,4.95,6.1,35.29,4.13,0.95,198.35,1.47,30.05,73.0,1005.0,5.37,271.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:07,Quy Nhon,Binh Dinh,Quy Nhon (openweathermap),13.7563,109.2297,1,2.52,2.76,31.05,1.93,0.42,134.51,0.56,30.94,64.0,1003.0,4.17,149.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:06,Buon Ma Thuot,Dak Lak,Buon Ma Thuot (openweathermap),12.6667,108.05,2,13.3,14.57,11.31,9.12,1.4,487.01,1.37,25.25,93.0,1006.0,1.61,316.0,9708.0,Clouds,openweathermap,
+2025-06-23 10:01:04,Nha Trang,Khanh Hoa,Nha Trang (openweathermap),12.2388,109.1967,2,10.16,11.55,33.87,6.76,1.24,283.64,0.59,30.39,70.0,1004.0,0.65,21.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:03,Hue,Thua Thien Hue,Hue (openweathermap),16.4637,107.5909,1,1.63,1.91,12.91,0.86,0.24,178.68,0.51,29.35,71.0,1003.0,2.52,91.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:02,Bien Hoa,Dong Nai,Bien Hoa (openweathermap),10.946,106.8234,1,6.26,7.48,23.84,8.84,2.49,295.64,2.66,30.48,67.0,1005.0,6.76,261.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:01,Hai Phong,Hai Phong,Hai Phong (openweathermap),20.8449,106.6881,3,27.74,31.18,64.82,2.87,1.97,240.68,3.2,30.21,75.0,1002.0,5.03,135.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:01:00,Can Tho,Can Tho,Can Tho (openweathermap),10.0452,105.7469,1,2.06,3.67,36.16,1.19,0.3,101.86,0.52,28.99,72.0,1006.0,6.72,267.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:00:59,Da Nang,Da Nang,Da Nang (openweathermap),16.0544,108.2022,1,4.34,4.76,13.88,3.95,0.62,235.1,0.9,29.17,75.0,1003.0,2.53,64.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:00:58,Hanoi,Hanoi,Hanoi (openweathermap),21.0285,105.8542,2,15.44,16.87,43.9,3.16,1.46,250.26,2.82,31.53,67.0,1000.0,3.34,141.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:00:57,Ho Chi Minh City,Ho Chi Minh,Ho Chi Minh City (openweathermap),10.8231,106.6297,1,5.46,6.61,24.98,7.63,2.22,268.76,2.47,30.73,66.0,1005.0,6.05,270.0,10000.0,Clouds,openweathermap,
+2025-06-23 10:00:54,Ben Tre,Ben Tre,Ben Tre (waqi),10.2431,106.3756,2,5.0,2.0,5.0,3.0,25.0,2.0,,,,,,,,,waqi,success
+2025-06-23 10:00:54,Tay Ninh,Tay Ninh,Tay Ninh (waqi),11.31,106.0983,23,10.0,23.0,,14.0,,,,,,,,,,,waqi,success
+2025-06-23 10:00:53,Bac Lieu,Bac Lieu,Bac Lieu (waqi),9.2847,105.7244,19,11.0,19.0,11.0,10.0,,10.0,,,,,,,,,waqi,success
+2025-06-23 10:00:53,Ca Mau,Ca Mau,Ca Mau (waqi),9.1767,105.1525,19,11.0,19.0,11.0,10.0,,10.0,,,,,,,,,waqi,success
+2025-06-23 10:00:53,Cao Lanh,Dong Thap,Cao Lanh (waqi),10.4592,105.6325,2,5.0,2.0,5.0,3.0,25.0,2.0,,,,,,,,,waqi,success
+2025-06-23 10:00:53,Chau Doc,An Giang,Chau Doc (waqi),10.7011,105.1119,19,11.0,19.0,11.0,10.0,,10.0,,,,,,,,,waqi,success
+2025-06-23 10:00:53,Di An,Binh Duong,Di An (waqi),10.9069,106.7722,23,10.0,23.0,,14.0,,,,,,,,,,,waqi,success
+2025-06-23 10:00:53,Ha Tien,Kien Giang,Ha Tien (waqi),10.3831,104.4881,19,11.0,19.0,11.0,10.0,,10.0,,,,,,,,,waqi,success
+2025-06-23 10:00:53,Phu Quoc,Kien Giang,Phu Quoc (waqi),10.2897,103.984,19,11.0,19.0,11.0,10.0,,10.0,,,,,,,,,waqi,success
+2025-06-23 10:00:53,Sa Dec,Dong Thap,Sa Dec (waqi),10.2922,105.7592,2,5.0,2.0,5.0,3.0,25.0,2.0,,,,,,,,,waqi,success
+2025-06-23 10:00:53,Soc Trang,Soc Trang,Soc Trang (waqi),9.6025,105.9803,19,11.0,19.0,11.0,10.0,,10.0,,,,,,,,,waqi,success
+2025-06-23 10:00:53,Tan An,Long An,Tan An (waqi),10.5439,106.4108,23,10.0,23.0,,14.0,,,,,,,,,,,waqi,success
+2025-06-23 10:00:53,Tra Vinh,Tra Vinh,Tra Vinh (waqi),9.9514,106.3431,24,24.0,19.0,27.0,18.0,10.0,44.0,,,,,,,,,waqi,success
+2025-06-23 10:00:53,Vinh Long,Vinh Long,Vinh Long (waqi),10.2397,105.9722,2,5.0,2.0,5.0,3.0,25.0,2.0,,,,,,,,,waqi,success
+2025-06-23 10:00:52,Bac Ninh,Bac Ninh,Bac Ninh (waqi),21.1861,106.0763,3,3.0,2.0,46.0,,61.0,1.0,,,,,,,,,waqi,success
+2025-06-23 10:00:52,Dong Ha,Quang Tri,Dong Ha (waqi),16.8167,107.1,8,8.0,6.0,4.0,5.0,31.0,3.0,,,,,,,,,waqi,success
+2025-06-23 10:00:52,Dong Hoi,Quang Binh,Dong Hoi (waqi),17.4833,106.6,20,20.0,17.0,,,4.0,3.0,,,,,,,,,waqi,success
+2025-06-23 10:00:52,Hai Duong,Hai Duong,Hai Duong (waqi),20.9373,106.3145,23,23.0,15.0,32.0,,15.0,,,,,,,,,,waqi,success
+2025-06-23 10:00:52,Hoi An,Quang Nam,Hoi An (waqi),15.8801,108.338,30,13.0,30.0,,,,,,,,,,,,,waqi,success
+2025-06-23 10:00:52,Hung Yen,Hung Yen,Hung Yen (waqi),20.6464,106.0511,10,10.0,7.0,14.0,,,1.0,,,,,,,,,waqi,success
+2025-06-23 10:00:52,Quang Ngai,Quang Ngai,Quang Ngai (waqi),15.1194,108.7922,30,13.0,30.0,,,,,,,,,,,,,waqi,success
+2025-06-23 10:00:52,Tam Ky,Quang Nam,Tam Ky (waqi),15.5736,108.4736,30,13.0,30.0,,,,,,,,,,,,,waqi,success
+2025-06-23 10:00:52,Thanh Hoa,Thanh Hoa,Thanh Hoa (waqi),19.8067,105.7851,37,37.0,11.0,1.0,21.0,17.0,44.0,,,,,,,,,waqi,success
+2025-06-23 10:00:52,Tuy Hoa,Phu Yen,Tuy Hoa (waqi),13.0833,109.3,11,11.0,10.0,18.0,8.0,,3.0,,,,,,,,,waqi,success
+2025-06-23 10:00:52,Uong Bi,Quang Ninh,Uong Bi (waqi),21.0358,106.7733,23,23.0,15.0,32.0,,15.0,,,,,,,,,,waqi,success
+2025-06-23 10:00:52,Viet Tri,Phu Tho,Viet Tri (waqi),21.3227,105.4024,29,29.0,18.0,14.0,1.0,8.0,6.0,,,,,,,,,waqi,success
+2025-06-23 10:00:51,Dalat,Lam Dong,Dalat (waqi),11.9404,108.4583,11,11.0,10.0,18.0,8.0,,3.0,,,,,,,,,waqi,success
+2025-06-23 10:00:51,Ha Long,Quang Ninh,Ha Long (waqi),20.95,107.0833,62,62.0,50.0,,,22.0,,,,,,,,,,waqi,success
+2025-06-23 10:00:51,Long Xuyen,An Giang,Long Xuyen (waqi),10.3861,105.4348,19,11.0,19.0,11.0,10.0,,10.0,,,,,,,,,waqi,success
+2025-06-23 10:00:51,My Tho,Tien Giang,My Tho (waqi),10.36,106.3597,2,5.0,2.0,5.0,3.0,25.0,2.0,,,,,,,,,waqi,success
+2025-06-23 10:00:51,Nam Dinh,Nam Dinh,Nam Dinh (waqi),20.4389,106.1621,62,62.0,50.0,,,22.0,,,,,,,,,,waqi,success
+2025-06-23 10:00:51,Ninh Binh,Ninh Binh,Ninh Binh (waqi),20.2506,105.9756,37,37.0,11.0,1.0,21.0,17.0,44.0,,,,,,,,,waqi,success
+2025-06-23 10:00:51,Phan Thiet,Binh Thuan,Phan Thiet (waqi),10.9289,108.1022,9,7.0,9.0,3.0,3.0,9.0,4.0,,,,,,,,,waqi,success
+2025-06-23 10:00:51,Pleiku,Gia Lai,Pleiku (waqi),13.9833,108.0,4,4.0,4.0,6.0,,31.0,3.0,,,,,,,,,waqi,success
+2025-06-23 10:00:51,Rach Gia,Kien Giang,Rach Gia (waqi),10.0128,105.08,19,11.0,19.0,11.0,10.0,,10.0,,,,,,,,,waqi,success
+2025-06-23 10:00:51,Thai Nguyen,Thai Nguyen,Thai Nguyen (waqi),21.5944,105.8487,88,88.0,49.0,,,1.0,3.0,,,,,,,,,waqi,success
+2025-06-23 10:00:51,Thu Dau Mot,Binh Duong,Thu Dau Mot (waqi),10.9804,106.6519,23,10.0,23.0,,14.0,,,,,,,,,,,waqi,success
+2025-06-23 10:00:51,Vinh,Nghe An,Vinh (waqi),18.6699,105.6816,12,,12.0,2.0,60.0,66.0,8.0,,,,,,,,,waqi,success
+2025-06-23 10:00:50,Bien Hoa,Dong Nai,Bien Hoa (waqi),10.946,106.8234,18,13.0,18.0,13.0,2.0,2.0,3.0,,,,,,,,,waqi,success
+2025-06-23 10:00:50,Buon Ma Thuot,Dak Lak,Buon Ma Thuot (waqi),12.6667,108.05,11,11.0,10.0,18.0,8.0,,3.0,,,,,,,,,waqi,success
+2025-06-23 10:00:50,Can Tho,Can Tho,Can Tho (waqi),10.0452,105.7469,19,11.0,19.0,11.0,10.0,,10.0,,,,,,,,,waqi,success
+2025-06-23 10:00:50,Da Nang,Da Nang,Da Nang (waqi),16.0544,108.2022,30,13.0,30.0,,,,,,,,,,,,,waqi,success
+2025-06-23 10:00:50,Hai Phong,Hai Phong,Hai Phong (waqi),20.8449,106.6881,62,62.0,50.0,,,22.0,,,,,,,,,,waqi,success
+2025-06-23 10:00:50,Hanoi,Hanoi,Hanoi (waqi),21.0285,105.8542,40,38.0,40.0,18.0,23.0,9.0,6.0,,,,,,,,,waqi,success
+2025-06-23 10:00:50,Ho Chi Minh City,Ho Chi Minh,Ho Chi Minh City (waqi),10.8231,106.6297,23,10.0,23.0,,14.0,,,,,,,,,,,waqi,success
+2025-06-23 10:00:50,Hue,Thua Thien Hue,Hue (waqi),16.4637,107.5909,8,8.0,6.0,4.0,5.0,31.0,3.0,,,,,,,,,waqi,success
+2025-06-23 10:00:50,Nha Trang,Khanh Hoa,Nha Trang (waqi),12.2388,109.1967,11,11.0,10.0,18.0,8.0,,3.0,,,,,,,,,waqi,success
+2025-06-23 10:00:50,Quy Nhon,Binh Dinh,Quy Nhon (waqi),13.7563,109.2297,12,8.0,12.0,2.0,,19.0,2.0,,,,,,,,,waqi,success
+2025-06-23 10:00:50,Vung Tau,Ba Ria Vung Tau,Vung Tau (waqi),10.4113,107.1364,9,7.0,9.0,3.0,3.0,9.0,4.0,,,,,,,,,waqi,success

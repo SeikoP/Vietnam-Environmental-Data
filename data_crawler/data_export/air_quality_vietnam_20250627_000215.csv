@@ -1,0 +1,11 @@
+﻿timestamp,city,province,city_source,latitude,longitude,aqi,pm25,pm10,o3,no2,so2,co,nh3,temperature,humidity,pressure,wind_speed,wind_direction,visibility,weather_condition,source,status
+2025-06-27 00:02:14,Hai Phong,Hai Phong,Hai Phong (openweathermap),20.8449,106.6881,3,41.19,45.35,50.44,6.93,2.1,477.94,3.57,29.07,84.0,1005.0,1.67,153.0,10000.0,Clouds,openweathermap,
+2025-06-27 00:02:13,Can Tho,Can Tho,Can Tho (openweathermap),10.0452,105.7469,2,24.71,27.83,20.87,11.25,1.53,645.59,2.69,24.91,98.0,1010.0,2.51,223.0,10000.0,Clouds,openweathermap,
+2025-06-27 00:02:11,Da Nang,Da Nang,Da Nang (openweathermap),16.0544,108.2022,1,2.54,2.86,4.7,1.36,0.12,138.14,0.23,26.54,89.0,1007.0,1.98,227.0,10000.0,Clouds,openweathermap,
+2025-06-27 00:02:10,Hanoi,Hanoi,Hanoi (openweathermap),21.0285,105.8542,3,33.0,36.16,6.1,8.14,1.56,530.6,3.63,27.45,83.0,1005.0,2.77,155.0,10000.0,Rain,openweathermap,
+2025-06-27 00:02:09,Ho Chi Minh City,Ho Chi Minh,Ho Chi Minh City (openweathermap),10.8231,106.6297,4,67.09,75.85,1.52,26.25,4.85,1553.43,6.57,26.09,89.0,1009.0,2.66,226.0,10000.0,Rain,openweathermap,
+2025-06-27 00:02:06,Can Tho,Can Tho,Can Tho (waqi),10.0452,105.7469,34,14.0,34.0,11.0,30.0,,11.0,,,,,,,,,waqi,success
+2025-06-27 00:02:06,Da Nang,Da Nang,Da Nang (waqi),16.0544,108.2022,150,101.0,150.0,,,,,,,,,,,,,waqi,success
+2025-06-27 00:02:06,Hai Phong,Hai Phong,Hai Phong (waqi),20.8449,106.6881,32,32.0,29.0,,,22.0,,,,,,,,,,waqi,success
+2025-06-27 00:02:06,Hanoi,Hanoi,Hanoi (waqi),21.0285,105.8542,78,78.0,46.0,9.0,15.0,10.0,6.0,,,,,,,,,waqi,success
+2025-06-27 00:02:06,Ho Chi Minh City,Ho Chi Minh,Ho Chi Minh City (waqi),10.8231,106.6297,27,11.0,27.0,,6.0,,,,,,,,,,,waqi,success

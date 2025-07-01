@@ -1,0 +1,41 @@
+data/
+ssis/Integration Services Project dp-15/.vs/
+ssis/Integration Services Project dp-15/*.suo
+ssis/Integration Services Project dp-15/bin/
+ssis/Integration Services Project dp-15/obj/
+*.env
+*.log
+*.sqlite3
+*.db
+*.pkl
+*.pyc
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.egg-info/
+dist/
+build/
+.cache/
+.env
+*.env
+data/
+data_crawler/data/
+data_cleaner/data/
+data_cleaner/credentials_oauth.json
+clean/
+volumes/
+n8n_data/
+postgres_data/
+# Ignore Jupyter and notebook checkpoints
+.ipynb_checkpoints/
+# Ignore OS files
+.DS_Store
+Thumbs.db
