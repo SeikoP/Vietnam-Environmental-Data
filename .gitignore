@@ -92,4 +92,4 @@ docker/*.env
 .DS_Store
 Thumbs.db
 
-venv/
+.venv/

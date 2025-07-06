@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+pandas
+requests
+python-dotenv
+sqlalchemy
+psycopg2-binary
+pytz
+geopandas
+shapely
+jinja2
+statistics

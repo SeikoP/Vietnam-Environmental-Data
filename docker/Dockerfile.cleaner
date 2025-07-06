@@ -1,0 +1,17 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY ../configs/requirements_cleaner.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY ../Cleaners/air_cleaner.py ./Cleaners/
+COPY ../Cleaners/water_cleaner.py ./Cleaners/
+COPY ../Cleaners/soil_cleaner.py ./Cleaners/
+COPY ../Cleaners/climate_cleaner.py ./Cleaners/
+COPY ../configs/.env.example ./configs/.env.example
+
+EXPOSE 8091
+EXPOSE 8092
+EXPOSE 8093
+EXPOSE 8094
