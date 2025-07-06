@@ -56,7 +56,7 @@ engine = create_engine(DATABASE_URL)
 
 app = FastAPI()
 
-@app.post("/main")
+@app.post("/air_cleaner")
 async def main(request: Request):
     """
     Nhận body JSON hợp lệ từ n8n hoặc client khác, trả về lỗi nếu không phải JSON.
