@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:13
@@ -74,7 +76,93 @@ services:
       - air_quality_network
     command: ["uvicorn", "api.api:app", "--host", "0.0.0.0", "--port", "8000"]
 
-  
+  air_crawler:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.air_crawler
+    env_file: ../configs/.env
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    networks:
+      - air_quality_network
+
+  water_crawler:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.water_crawler
+    env_file: ../configs/.env
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+    networks:
+      - air_quality_network
+
+  soil_crawler:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.soil_crawler
+    env_file: ../configs/.env
+    ports:
+      - "8083:8083"
+    restart: unless-stopped
+    networks:
+      - air_quality_network
+
+  climate_crawler:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.climate_crawler
+    env_file: ../configs/.env
+    ports:
+      - "8084:8084"
+    restart: unless-stopped
+    networks:
+      - air_quality_network
+
+  air_cleaner:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cleaner
+    env_file: ../configs/.env
+    ports:
+      - "8091:8091"
+    restart: unless-stopped
+    networks:
+      - air_quality_network
+
+  water_cleaner:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cleaner
+    env_file: ../configs/.env
+    ports:
+      - "8092:8092"
+    restart: unless-stopped
+    networks:
+      - air_quality_network
+
+  soil_cleaner:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cleaner
+    env_file: ../configs/.env
+    ports:
+      - "8093:8093"
+    restart: unless-stopped
+    networks:
+      - air_quality_network
+
+  climate_cleaner:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cleaner
+    env_file: ../configs/.env
+    ports:
+      - "8094:8094"
+    restart: unless-stopped
+    networks:
+      - air_quality_network
 
   n8n:
     image: n8nio/n8n
@@ -102,6 +190,7 @@ services:
 volumes:
   postgres_data:
     name: air_quality_postgres_data
+  pgdata:
 
 networks:
   air_quality_network:

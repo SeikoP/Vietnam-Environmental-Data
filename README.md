@@ -2,11 +2,9 @@
 
 ## 📌 Giới thiệu
 
-Hệ thống nền tảng dữ liệu môi trường Việt Nam, hỗ trợ đa nguồn dữ liệu và workflow hiện đại:
-- **Crawler**: Thu thập dữ liệu không khí, nước, đất, khí hậu từ nhiều API (IQAir, WAQI, OpenWeatherMap, SoilGrids, Open-Meteo, NASA POWER, World Bank, ...).
-- **Cleaner**: Làm sạch, chuẩn hóa, phân tách bảng, lưu vào PostgreSQL, hỗ trợ chuẩn hóa dữ liệu đa miền.
-- **API**: Cung cấp REST API cho dashboard, phân tích, cảnh báo, truy vấn dữ liệu sạch.
-- **Workflow tự động**: n8n điều phối, cảnh báo Discord, log, Power BI, hỗ trợ Docker Compose.
+Nền tảng dữ liệu môi trường Việt Nam thu thập, làm sạch, chuẩn hóa, lưu trữ và cung cấp API dữ liệu không khí, nước, đất, khí hậu từ nhiều nguồn (OpenWeather, SoilGrids, NASA POWER, World Bank, ...). Hệ thống hỗ trợ workflow tự động, cảnh báo, tích hợp BI, triển khai đa môi trường (local, cloud, Docker).
+
+---
 
 ## 🧱 Cấu trúc dự án
 
@@ -52,55 +50,90 @@ Hệ thống nền tảng dữ liệu môi trường Việt Nam, hỗ trợ đa 
 └── README.md
 ```
 
+---
+
 ## ⚙️ Quy trình hệ thống
 
-1. **Thu thập dữ liệu (Crawler)**
-   - Gọi API `/run_crawl` cho từng loại: không khí, nước, đất, khí hậu.
-   - Crawl đa nguồn, trả về file CSV và nội dung CSV, lưu vào `data_storage/<type>/raw/`.
-   - Hỗ trợ crawl nâng cao: crawl song song, cache, retry, log chi tiết, crawl nhiều API cho cùng 1 loại dữ liệu.
+1. **Crawler**  
+   - Thu thập dữ liệu từ nhiều API (không khí, nước, đất, khí hậu).
+   - Lưu file CSV vào `data_storage/<type>/raw/`.
+   - Hỗ trợ crawl song song, cache, retry, log chi tiết.
 
-2. **Làm sạch & chuẩn hóa (Cleaner)**
-   - Nhận CSV qua API `/clean_<type>_data`.
-   - Làm sạch, chuẩn hóa, phân tách bảng (City, Source, WeatherCondition, ...), lưu vào PostgreSQL.
-   - Chuẩn hóa dữ liệu đa miền, kiểm tra ngoại lệ, mapping ID, log chi tiết.
+2. **Cleaner**  
+   - Nhận file CSV, làm sạch, chuẩn hóa, phân tách bảng (City, Source, WeatherCondition, ...).
+   - Lưu dữ liệu sạch vào PostgreSQL.
+   - Mapping ID, kiểm tra ngoại lệ, log chi tiết.
 
-3. **Phân tích & cảnh báo (API)**
-   - API `/process-data` nhận dữ liệu sạch, phân tích, sinh cảnh báo nếu vượt ngưỡng.
-   - Trả về insight, cảnh báo, khu vực ảnh hưởng, hỗ trợ truy vấn dữ liệu mới nhất.
+3. **API**  
+   - Cung cấp REST API cho dashboard, phân tích, cảnh báo, truy vấn dữ liệu sạch.
+   - Endpoint phân tích, sinh cảnh báo nếu vượt ngưỡng.
 
-4. **Tự động hóa & cảnh báo (Workflow)**
-   - n8n workflow: Lên lịch, kiểm tra, gọi các API trên, gửi cảnh báo Discord khi phát hiện vượt ngưỡng, log thực thi, trigger Power BI.
-   - Hỗ trợ tích hợp với các hệ thống BI, cảnh báo real-time.
+4. **Workflow tự động**  
+   - n8n điều phối, lên lịch, gọi các API, gửi cảnh báo Discord, log thực thi, trigger Power BI.
+
+---
 
 ## 🚦 Các endpoint chính
 
-- **Crawler**:  
+- **Crawler**  
   - `POST /run_crawl` (air, water, soil, climate) → Trả về file CSV, nội dung CSV, tổng số bản ghi, các trường dữ liệu.
-  - `GET /health` → Kiểm tra trạng thái từng crawler.
+  - `GET /health` → Kiểm tra trạng thái crawler.
   - `GET /locations` → Danh sách địa điểm crawl được.
 
-- **Cleaner**:  
+- **Cleaner**  
   - `POST /clean_<type>_data` → Nhận CSV, làm sạch, chuẩn hóa, lưu DB.
   - `GET /<type>-quality` → Lấy 100 bản ghi sạch mới nhất.
   - `GET /health` → Kiểm tra trạng thái cleaner.
 
-- **API**:  
+- **API**  
   - `GET /air-quality`, `GET /water-quality`, ... → 100 bản ghi mới nhất.
   - `POST /process-data` → Phân tích, cảnh báo, insight cho workflow.
   - `GET /health` → Kiểm tra trạng thái API.
 
-## 🏁 Hướng dẫn chạy
+---
 
-### 1. Cài đặt thư viện
+## 🏁 Hướng dẫn cài đặt & chạy
+
+### 1. Cài đặt thư viện Python
+
 ```bash
 pip install -r configs/requirements.txt
 ```
 
 ### 2. Cấu hình biến môi trường
-- Tạo file `.env` từ `configs/.env.example`.
-- Thiết lập các API key cần thiết (OpenWeather, IQAir, SoilGrids, ...).
 
-### 3. Chạy từng service (có thể chạy độc lập hoặc Docker Compose)
+- Tạo file `.env` từ `configs/.env.example`.
+- Thiết lập các API key cần thiết (OpenWeather, SoilGrids, ...).
+
+### 3. Tạo cấu trúc thư mục (nếu chưa có)
+
+**Windows PowerShell:**
+```powershell
+New-Item -ItemType Directory -Force -Path crawlers\air
+New-Item -ItemType Directory -Force -Path crawlers\water
+New-Item -ItemType Directory -Force -Path crawlers\soil
+New-Item -ItemType Directory -Force -Path crawlers\climate
+New-Item -ItemType Directory -Force -Path cleaners
+New-Item -ItemType Directory -Force -Path api
+New-Item -ItemType Directory -Force -Path data_storage\air\raw
+New-Item -ItemType Directory -Force -Path data_storage\water\raw
+New-Item -ItemType Directory -Force -Path data_storage\soil\raw
+New-Item -ItemType Directory -Force -Path data_storage\climate\raw
+New-Item -ItemType Directory -Force -Path workflows\n8n
+New-Item -ItemType Directory -Force -Path configs
+New-Item -ItemType Directory -Force -Path docker
+```
+
+**Linux/macOS:**
+```bash
+mkdir -p crawlers/air crawlers/water crawlers/soil crawlers/climate
+mkdir -p cleaners api
+mkdir -p data_storage/air/raw data_storage/water/raw data_storage/soil/raw data_storage/climate/raw
+mkdir -p workflows/n8n configs docker
+```
+
+### 4. Chạy từng service (local)
+
 ```bash
 uvicorn crawlers.air.air_crawler:app --reload --port 8081
 uvicorn crawlers.water.water_crawler:app --reload --port 8082
@@ -113,9 +146,12 @@ uvicorn cleaners.climate_cleaner:app --reload --port 8094
 uvicorn api.api:app --reload --port 8000
 ```
 
-### 4. (Tùy chọn) Chạy workflow tự động với n8n
+### 5. (Tùy chọn) Chạy workflow tự động với n8n
+
 - Import workflow mẫu, cấu hình endpoint phù hợp cho từng loại dữ liệu.
 - Tích hợp cảnh báo Discord, log, Power BI...
+
+---
 
 ## 🐳 Docker Compose (khuyến nghị)
 
@@ -218,6 +254,8 @@ volumes:
   pgdata:
 ```
 
+---
+
 ## ✅ Yêu cầu hệ thống
 
 - Python 3.9+
@@ -226,6 +264,8 @@ volumes:
 - (Tùy chọn) Google API Client, Docker, n8n, Power BI
 - (Tùy chọn) Các API key cho nước, đất, khí hậu nếu có
 
+---
+
 ## 📊 Ứng dụng & mở rộng
 
 - Kết nối Power BI lấy dữ liệu real-time thông qua các endpoint JSON.
@@ -233,6 +273,19 @@ volumes:
 - Lên lịch tự động bằng n8n, Airflow hoặc `schedule`.
 - Mở rộng thêm các nguồn dữ liệu môi trường khác, tích hợp AI phân tích dự báo.
 
+---
+
+## 📝 Lưu ý triển khai thực tế
+
+- Đảm bảo cấu hình `.env` đúng, bảo mật các API key.
+- Kiểm tra quyền ghi thư mục `data_storage/`, `data_crawler/`, `data_cleaner/`.
+- Khi chạy Docker, mount volume nếu muốn giữ dữ liệu ngoài container.
+- Đảm bảo PostgreSQL đã khởi động trước khi cleaner hoặc API ghi dữ liệu.
+- Đọc kỹ log khi gặp lỗi, kiểm tra kết nối mạng tới các API nguồn.
+
+---
+
 ## 🧑‍💻 Tác giả
+
 Nguyễn Hữu Cường  
 Dự án tốt nghiệp - Phân tích dữ liệu 2025
