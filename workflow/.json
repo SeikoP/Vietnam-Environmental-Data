@@ -1,0 +1,1228 @@
+{
+  "name": "Environmental_Monitoring_Master",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        }
+      },
+      "id": "master-trigger-hourly",
+      "name": "Master Trigger Hourly",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [-3400, -200]
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "custom",
+              "cronExpression": "0 */6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "master-trigger-6h",
+      "name": "Master Trigger 6 Hours",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [-3400, -80]
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "custom",
+              "cronExpression": "0 */12 * * *"
+            }
+          ]
+        }
+      },
+      "id": "master-trigger-12h",
+      "name": "Master Trigger 12 Hours",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [-3400, 40]
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "branches": {
+          "branch": [
+            {
+              "name": "Air Quality",
+              "condition": {
+                "conditions": [
+                  {
+                    "leftValue": "{{ $json.trigger_type }}",
+                    "rightValue": "hourly",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "Water & Climate",
+              "condition": {
+                "conditions": [
+                  {
+                    "leftValue": "{{ $json.trigger_type }}",
+                    "rightValue": "6hours",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "name": "Soil Quality",
+              "condition": {
+                "conditions": [
+                  {
+                    "leftValue": "{{ $json.trigger_type }}",
+                    "rightValue": "12hours",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "id": "workflow-router",
+      "name": "Workflow Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [-3000, -80]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "trigger_type",
+              "value": "hourly"
+            },
+            {
+              "name": "timestamp",
+              "value": "{{ $now }}"
+            }
+          ]
+        }
+      },
+      "id": "set-hourly-trigger",
+      "name": "Set Hourly Trigger",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [-3200, -200]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "trigger_type",
+              "value": "6hours"
+            },
+            {
+              "name": "timestamp",
+              "value": "{{ $now }}"
+            }
+          ]
+        }
+      },
+      "id": "set-6h-trigger",
+      "name": "Set 6H Trigger",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [-3200, -80]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "trigger_type",
+              "value": "12hours"
+            },
+            {
+              "name": "timestamp",
+              "value": "{{ $now }}"
+            }
+          ]
+        }
+      },
+      "id": "set-12h-trigger",
+      "name": "Set 12H Trigger",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [-3200, 40]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://air_quality_service:8081/run_optimized_crawl",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "air-quality-crawler",
+      "name": "Air Quality Crawler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-2600, -280]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://water_quality_service:8082/run_water_crawl",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "water-quality-crawler",
+      "name": "Water Quality Crawler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-2600, -80]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://climate_service:8083/run_climate_crawl",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "climate-data-crawler",
+      "name": "Climate Data Crawler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-2600, 20]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://soil_quality_service:8084/run_soil_crawl",
+        "options": {
+          "timeout": 240000
+        }
+      },
+      "id": "soil-quality-crawler",
+      "name": "Soil Quality Crawler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-2600, 120]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "air-quality-success",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "validate-air-quality",
+      "name": "Validate Air Quality",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-2400, -280]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "water-quality-success",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "validate-water-quality",
+      "name": "Validate Water Quality",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-2400, -80]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "climate-success",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "validate-climate",
+      "name": "Validate Climate Data",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-2400, 20]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "soil-success",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "validate-soil-quality",
+      "name": "Validate Soil Quality",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-2400, 120]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://data_cleaner:8080/clean_air_data",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 120000
+        },
+        "bodyParametersJson": "={{ { \"csv_content\": $json.csv_content, \"timestamp\": $json.timestamp, \"data_type\": \"air_quality\", \"quality_check\": true, \"backup\": true } }}"
+      },
+      "id": "clean-air-data",
+      "name": "Clean Air Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-2200, -360]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://data_cleaner:8080/clean_water_data",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 120000
+        },
+        "bodyParametersJson": "={{ { \"csv_content\": $json.csv_content, \"timestamp\": $json.timestamp, \"data_type\": \"water_quality\", \"quality_check\": true, \"backup\": true } }}"
+      },
+      "id": "clean-water-data",
+      "name": "Clean Water Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-2200, -160]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://data_cleaner:8080/clean_climate_data",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 120000
+        },
+        "bodyParametersJson": "={{ { \"csv_content\": $json.csv_content, \"timestamp\": $json.timestamp, \"data_type\": \"climate\", \"quality_check\": true, \"backup\": true } }}"
+      },
+      "id": "clean-climate-data",
+      "name": "Clean Climate Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-2200, 40]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://data_cleaner:8080/clean_soil_data",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 120000
+        },
+        "bodyParametersJson": "={{ { \"csv_content\": $json.csv_content, \"timestamp\": $json.timestamp, \"data_type\": \"soil_quality\", \"quality_check\": true, \"backup\": true } }}"
+      },
+      "id": "clean-soil-data",
+      "name": "Clean Soil Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-2200, 200]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://analytics_engine:8000/analyze_air_quality",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 90000
+        },
+        "bodyParametersJson": "={{ { \"data\": $json.data, \"include_health_recommendations\": true, \"alert_threshold\": 100 } }}"
+      },
+      "id": "analyze-air-quality",
+      "name": "Analyze Air Quality",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-2000, -360]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://analytics_engine:8000/analyze_water_quality",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 90000
+        },
+        "bodyParametersJson": "={{ { \"data\": $json.data, \"include_health_recommendations\": true, \"wqi_threshold\": 50 } }}"
+      },
+      "id": "analyze-water-quality",
+      "name": "Analyze Water Quality",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-2000, -160]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://analytics_engine:8000/analyze_climate",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 90000
+        },
+        "bodyParametersJson": "={{ { \"data\": $json.data, \"include_health_recommendations\": true, \"heat_threshold\": 35 } }}"
+      },
+      "id": "analyze-climate",
+      "name": "Analyze Climate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-2000, 40]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://analytics_engine:8000/analyze_soil_quality",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 90000
+        },
+        "bodyParametersJson": "={{ { \"data\": $json.data, \"include_health_recommendations\": true, \"contamination_threshold\": 0.1 } }}"
+      },
+      "id": "analyze-soil-quality",
+      "name": "Analyze Soil Quality",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-2000, 200]
+    },
+    {
+      "parameters": {},
+      "id": "merge-all-analyses",
+      "name": "Merge All Analyses",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [-1800, -80]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://analytics_engine:8000/unified_analysis",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 180000
+        },
+        "bodyParametersJson": "={{ { \"air_quality\": $json[0] || null, \"water_quality\": $json[1] || null, \"climate\": $json[2] || null, \"soil_quality\": $json[3] || null, \"correlation_analysis\": true, \"risk_assessment\": true } }}"
+      },
+      "id": "unified-analysis",
+      "name": "Unified Environmental Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-1600, -80]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "critical-alert-check",
+              "leftValue": "={{ $json.overall_risk_level }}",
+              "rightValue": "critical",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        }
+      },
+      "id": "check-critical-alerts",
+      "name": "Check Critical Alerts",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-1400, -80]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "high-alert-check",
+              "leftValue": "={{ $json.overall_risk_level }}",
+              "rightValue": "high",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        }
+      },
+      "id": "check-high-alerts",
+      "name": "Check High Alerts",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-1400, 80]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://alert_manager:8085/send_critical_alert",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 30000
+        },
+        "bodyParametersJson": "={{ { \"alert_data\": $json, \"channels\": [\"discord\", \"email\", \"sms\"], \"priority\": \"critical\" } }}"
+      },
+      "id": "send-critical-alert",
+      "name": "Send Critical Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-1200, -160]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://alert_manager:8085/send_high_alert",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 30000
+        },
+        "bodyParametersJson": "={{ { \"alert_data\": $json, \"channels\": [\"discord\", \"email\"], \"priority\": \"high\" } }}"
+      },
+      "id": "send-high-alert",
+      "name": "Send High Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-1200, 0]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://alert_manager:8085/send_normal_notification",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 30000
+        },
+        "bodyParametersJson": "={{ { \"alert_data\": $json, \"channels\": [\"discord\"], \"priority\": \"normal\" } }}"
+      },
+      "id": "send-normal-notification",
+      "name": "Send Normal Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-1200, 160]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://data_storage:8086/store_environmental_data",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 60000
+        },
+        "bodyParametersJson": "={{ { \"unified_data\": $json, \"timestamp\": $now, \"backup\": true, \"retention_days\": 365 } }}"
+      },
+      "id": "store-environmental-data",
+      "name": "Store Environmental Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-1000, -80]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://analytics_engine:8000/log_execution",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 30000
+        },
+        "bodyParametersJson": "={{ { \"workflow_name\": \"Environmental_Monitoring_Master\", \"execution_time\": $now, \"success\": true, \"data_sources\": [\"air\", \"water\", \"climate\", \"soil\"], \"alert_level\": $json.overall_risk_level || \"normal\" } }}"
+      },
+      "id": "log-execution",
+      "name": "Log Execution",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-800, -80]
+    },
+    {
+      "parameters": {
+        "webhookUri": "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
+        "text": "=🔄 **Hệ Thống Giám Sát Môi Trường**\n\n📊 **Tổng Quan Tình Trạng Môi Trường**\n- Mức độ rủi ro tổng thể: {{ $json.overall_risk_level || 'Bình thường' }}\n- Điểm sức khỏe môi trường: {{ $json.environmental_health_score || 'N/A' }}/100\n\n🌬️ **Chất Lượng Không Khí**\n- AQI: {{ $json.air_quality?.aqi || 'N/A' }}\n- Trạng thái: {{ $json.air_quality?.status || 'N/A' }}\n\n💧 **Chất Lượng Nước**\n- WQI: {{ $json.water_quality?.wqi || 'N/A' }}\n- Trạng thái: {{ $json.water_quality?.status || 'N/A' }}\n\n🌡️ **Khí Hậu**\n- Nhiệt độ: {{ $json.climate?.temperature || 'N/A' }}°C\n- Chỉ số nhiệt: {{ $json.climate?.heat_index || 'N/A' }}\n\n🌱 **Chất Lượng Đất**\n- Mức độ ô nhiễm: {{ $json.soil_quality?.contamination_level || 'N/A' }}\n- Trạng thái: {{ $json.soil_quality?.status || 'N/A' }}\n\n📋 **Khuyến Nghị Tổng Hợp**\n{{ $json.unified_recommendations || 'Không có khuyến nghị đặc biệt' }}\n\n⏰ Cập nhật lúc: {{ $now.toLocaleString('vi-VN') }}",
+        "options": {}
+      },
+      "id": "discord-unified-notification",
+      "name": "Discord Unified Notification",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 1,
+      "position": [-1000, 80]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://dashboard_service:8087/update_dashboard",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 60000
+        },
+        "bodyParametersJson": "={{ { \"environmental_data\": $json, \"timestamp\": $now, \"update_charts\": true, \"refresh_maps\": true } }}"
+      },
+      "id": "update-dashboard",
+      "name": "Update Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-800, 80]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.data ? $json.data.length : 0 }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "check-data-quality-air",
+      "name": "Check Data Quality Air",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-2400, -360]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.data ? $json.data.length : 0 }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "check-data-quality-water",
+      "name": "Check Data Quality Water",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-2400, -160]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.data ? $json.data.length : 0 }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "check-data-quality-climate",
+      "name": "Check Data Quality Climate",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-2400, 40]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.data ? $json.data.length : 0 }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "check-data-quality-soil",
+      "name": "Check Data Quality Soil",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-2400, 200]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Master Trigger Hourly": {
+      "main": [
+        [
+          {
+            "node": "Set Hourly Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Master Trigger 6 Hours": {
+      "main": [
+        [
+          {
+            "node": "Set 6H Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Master Trigger 12 Hours": {
+      "main": [
+        [
+          {
+            "node": "Set 12H Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Hourly Trigger": {
+      "main": [
+        [
+          {
+            "node": "Workflow Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set 6H Trigger": {
+      "main": [
+        [
+          {
+            "node": "Workflow Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set 12H Trigger": {
+      "main": [
+        [
+          {
+            "node": "Workflow Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Router": {
+      "main": [
+        [
+          {
+            "node": "Air Quality Crawler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Water Quality Crawler",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Climate Data Crawler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Soil Quality Crawler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Air Quality Crawler": {
+      "main": [
+        [
+          {
+            "node": "Validate Air Quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Water Quality Crawler": {
+      "main": [
+        [
+          {
+            "node": "Validate Water Quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Climate Data Crawler": {
+      "main": [
+        [
+          {
+            "node": "Validate Climate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Soil Quality Crawler": {
+      "main": [
+        [
+          {
+            "node": "Validate Soil Quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Air Quality": {
+      "main": [
+        [
+          {
+            "node": "Check Data Quality Air",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Water Quality": {
+      "main": [
+        [
+          {
+            "node": "Check Data Quality Water",
+            "type": "main",
+            "index": 0}
+        ]
+      ]
+    },
+    "Validate Climate Data": {
+      "main": [
+        [
+          {
+            "node": "Check Data Quality Climate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Soil Quality": {
+      "main": [
+        [
+          {
+            "node": "Check Data Quality Soil",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Data Quality Air": {
+      "main": [
+        [
+          {
+            "node": "Clean Air Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Data Quality Water": {
+      "main": [
+        [
+          {
+            "node": "Clean Water Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Data Quality Climate": {
+      "main": [
+        [
+          {
+            "node": "Clean Climate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Data Quality Soil": {
+      "main": [
+        [
+          {
+            "node": "Clean Soil Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Air Data": {
+      "main": [
+        [
+          {
+            "node": "Analyze Air Quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Water Data": {
+      "main": [
+        [
+          {
+            "node": "Analyze Water Quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Climate Data": {
+      "main": [
+        [
+          {
+            "node": "Analyze Climate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Soil Data": {
+      "main": [
+        [
+          {
+            "node": "Analyze Soil Quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Air Quality": {
+      "main": [
+        [
+          {
+            "node": "Merge All Analyses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Water Quality": {
+      "main": [
+        [
+          {
+            "node": "Merge All Analyses",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Analyze Climate": {
+      "main": [
+        [
+          {
+            "node": "Merge All Analyses",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Analyze Soil Quality": {
+      "main": [
+        [
+          {
+            "node": "Merge All Analyses",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge All Analyses": {
+      "main": [
+        [
+          {
+            "node": "Unified Environmental Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unified Environmental Analysis": {
+      "main": [
+        [
+          {
+            "node": "Check Critical Alerts",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check High Alerts",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Store Environmental Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Discord Unified Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Critical Alerts": {
+      "main": [
+        [
+          {
+            "node": "Send Critical Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Normal Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check High Alerts": {
+      "main": [
+        [
+          {
+            "node": "Send High Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Normal Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Critical Alert": {
+      "main": [
+        [
+          {
+            "node": "Log Execution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send High Alert": {
+      "main": [
+        [
+          {
+            "node": "Log Execution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Normal Notification": {
+      "main": [
+        [
+          {
+            "node": "Log Execution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Environmental Data": {
+      "main": [
+        [
+          {
+            "node": "Update Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord Unified Notification": {
+      "main": [
+        [
+          {
+            "node": "Update Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Execution": {
+      "main": [
+        []
+      ]
+    },
+    "Update Dashboard": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "error_handler_workflow"
+  },
+  "versionId": "1.0.0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "environmental_monitoring_main"
+  },
+  "id": "environmental_monitoring_master_workflow",
+  "tags": [
+    {
+      "id": "environmental_monitoring",
+      "name": "Environmental Monitoring"
+    },
+    {
+      "id": "automated_analysis",
+      "name": "Automated Analysis"
+    },
+    {
+      "id": "multi_source_integration",
+      "name": "Multi-Source Integration"
+    }
+  ]
+}

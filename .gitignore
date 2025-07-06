@@ -27,15 +27,67 @@ build/
 .env
 *.env
 data/
-data_crawler/data/
-data_cleaner/data/
-data_cleaner/credentials_oauth.json
+data_crawler/
+data_cleaner/
 clean/
 volumes/
 n8n_data/
 postgres_data/
+data_storage/
+crawlers/*/data/
+cleaners/*/data/
+configs/.env
+docker/*.env
 # Ignore Jupyter and notebook checkpoints
 .ipynb_checkpoints/
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# === Additions/Improvements ===
+# Ignore logs, credentials, and temp files
+*.log
+*.pkl
+*.sqlite3
+*.db
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore output data and intermediate folders
+data_storage/
+data/
+data_crawler/
+data_cleaner/
+clean/
+volumes/
+n8n_data/
+postgres_data/
+crawlers/*/data/
+cleaners/*/data/
+
+# Ignore config secrets
+configs/.env
+docker/*.env
+
+# Ignore IDE/project files
+.vscode/
+.idea/
+*.suo
+*.user
+*.sln
+*.iml
+
 # Ignore OS files
 .DS_Store
 Thumbs.db
