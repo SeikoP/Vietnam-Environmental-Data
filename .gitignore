@@ -91,3 +91,5 @@ docker/*.env
 # Ignore OS files
 .DS_Store
 Thumbs.db
+
+venv/
