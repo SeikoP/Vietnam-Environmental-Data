@@ -12,6 +12,7 @@ import time
 import geopandas as gpd
 from shapely.geometry import Point
 import logging
+import concurrent.futures
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -648,133 +649,10 @@ def calculate_enhanced_soil_indices(soil_data: Dict) -> Dict:
     
     return indices
 
-@app.post("/run_enhanced_soil_crawl")
-async def run_enhanced_soil_crawl(request: Request):
-    """Enhanced soil data crawling with multiple free APIs."""
+def crawl_soil_location(location, world_bank_data=None):
+    """Crawl soil data for 1 location, trả về dict kết quả."""
     try:
-        body = await request.json() if request.headers.get("content-type") == "application/json" else {}
-        
-        all_locations = load_locations_from_json()
-        filter_criteria = body.get("filter", {})
-        
-        # Apply filters
-        locations = all_locations
-        if "provinces" in filter_criteria:
-            locations = [loc for loc in locations if loc.get("province") in filter_criteria["provinces"]]
-        if "limit" in filter_criteria:
-            locations = locations[:filter_criteria["limit"]]
-        if "locations" in body:
-            locations = body["locations"]
-        
-        logger.info(f"🌱 Enhanced crawling for {len(locations)} locations")
-        
-        # Get World Bank climate data for Vietnam (once)
-        world_bank_data = get_world_bank_climate_data()
-        
-        collected_data = []
-        
-        for i, location in enumerate(locations, 1):
-            logger.info(f"🔄 [{i}/{len(locations)}] Processing {location['name']}...")
-            
-            record = {
-                "timestamp": get_vietnam_time().strftime("%Y-%m-%d %H:%M:%S"),
-                "location": location["name"],
-                "province": location["province"],
-                "lat": location["lat"],
-                "lon": location["lon"],
-                "data_sources": []
-            }
-            
-            # 1. SoilGrids - Static soil properties (FREE)
-            logger.info(f"  📊 Fetching SoilGrids data...")
-            soilgrids_data = get_soilgrids_data(location["lat"], location["lon"])
-            if soilgrids_data:
-                record.update(soilgrids_data)
-                record["data_sources"].append("soilgrids")
-            time.sleep(1)
-            
-            # 2. Open-Meteo - Real-time soil and weather (FREE)
-            logger.info(f"  🌡️ Fetching Open-Meteo data...")
-            open_meteo_data = get_open_meteo_soil_data(location["lat"], location["lon"])
-            if open_meteo_data:
-                record.update(open_meteo_data)
-                record["data_sources"].append("open_meteo")
-            time.sleep(1)
-            
-            # 3. NASA POWER - Agro weather (FREE)
-            logger.info(f"  🛰️ Fetching NASA POWER data...")
-            nasa_power_data = get_nasa_power_data(location["lat"], location["lon"])
-            if nasa_power_data:
-                record.update(nasa_power_data)
-                record["data_sources"].append("nasa_power")
-            time.sleep(1)
-            
-            # 4. World Bank - National climate (FREE, only once)
-            if world_bank_data:
-                record.update(world_bank_data)
-                record["data_sources"].append("world_bank")
-            
-            # 5. AgroMonitoring (PREMIUM, optional)
-            if AGROMONITORING_API_KEY:
-                logger.info(f"  🌾 Fetching AgroMonitoring data...")
-                agromonitoring_data = get_agromonitoring_data(location["lat"], location["lon"])
-                if agromonitoring_data:
-                    record.update(agromonitoring_data)
-                    record["data_sources"].append("agromonitoring")
-                time.sleep(1)
-            
-            # 6. OpenWeather (PREMIUM, optional)
-            if OPENWEATHER_API_KEY:
-                logger.info(f"  🌤️ Fetching OpenWeather data...")
-                openweather_data = get_openweather_soil_data(location["lat"], location["lon"])
-                if openweather_data:
-                    record.update(openweather_data)
-                    record["data_sources"].append("openweather")
-                time.sleep(1)
-            
-            # Calculate enhanced indices
-            logger.info(f"  🧮 Calculating soil indices...")
-            indices = calculate_enhanced_soil_indices(record)
-            record.update(indices)
-            
-            collected_data.append(record)
-            logger.info(f"✅ Done: {location['name']}")
-            time.sleep(1)
-        
-        if not collected_data:
-            raise HTTPException(status_code=404, detail="No data collected")
-        
-        df = pd.DataFrame(collected_data)
-        storage_dir = Path(r"D:\Project_Dp-15\Air_Quality\data_storage\soil\raw")
-        storage_dir.mkdir(parents=True, exist_ok=True)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_path = storage_dir / f"enhanced_soil_data_{timestamp}.csv"
-        df.to_csv(file_path, index=False, encoding='utf-8-sig')
-        
-        return {
-            "csv_file": str(file_path),
-            "csv_content": df.to_csv(index=False, encoding='utf-8-sig'),
-            "total_records": len(df),
-            "total_locations": len(collected_data),
-            "success": True,
-            "fields": list(df.columns)
-        }
-    except Exception as e:
-        logger.error(f"❌ Error in run_enhanced_soil_crawl: {e}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
-
-def main():
-    """Run enhanced soil crawl from command line for test/demo."""
-    logger.info("🌱 Starting enhanced soil crawl (CLI mode)...")
-    all_locations = load_locations_from_json()
-    # For demo/testing, limit to 3 locations
-    locations = all_locations[:3]
-    logger.info(f"🌍 Will crawl {len(locations)} locations")
-    # Get World Bank climate data once
-    world_bank_data = get_world_bank_climate_data()
-    collected_data = []
-    for i, location in enumerate(locations, 1):
-        logger.info(f"🔄 [{i}/{len(locations)}] Processing {location['name']}...")
+        logger.info(f"🔄 Crawling {location['name']}...")
         record = {
             "timestamp": get_vietnam_time().strftime("%Y-%m-%d %H:%M:%S"),
             "location": location["name"],
@@ -821,9 +699,117 @@ def main():
         logger.info(f"  🧮 Calculating soil indices...")
         indices = calculate_enhanced_soil_indices(record)
         record.update(indices)
-        collected_data.append(record)
         logger.info(f"✅ Done: {location['name']}")
         time.sleep(1)
+        return record
+    except Exception as ex:
+        logger.error(f"❌ Error crawling {location['name']}: {ex}")
+        return {
+            "timestamp": get_vietnam_time().strftime("%Y-%m-%d %H:%M:%S"),
+            "location": location["name"],
+            "province": location["province"],
+            "lat": location["lat"],
+            "lon": location["lon"],
+            "data_sources": [],
+            "success": False,
+            "error_message": str(ex)
+        }
+
+@app.post("/run_enhanced_soil_crawl")
+async def run_enhanced_soil_crawl(request: Request):
+    """Enhanced soil data crawling with multiple free APIs."""
+    try:
+        body = await request.json() if request.headers.get("content-type") == "application/json" else {}
+        all_locations = load_locations_from_json()
+        filter_criteria = body.get("filter", {})
+        locations = all_locations
+        if "provinces" in filter_criteria:
+            locations = [loc for loc in locations if loc.get("province") in filter_criteria["provinces"]]
+        if "limit" in filter_criteria:
+            locations = locations[:filter_criteria["limit"]]
+        if "locations" in body:
+            locations = body["locations"]
+        logger.info(f"🌱 Enhanced crawling for {len(locations)} locations")
+        world_bank_data = get_world_bank_climate_data()
+        collected_data = []
+        max_workers = min(8, len(locations))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_loc = {
+                executor.submit(crawl_soil_location, loc, world_bank_data): loc
+                for loc in locations
+            }
+            for i, future in enumerate(concurrent.futures.as_completed(future_to_loc), 1):
+                loc = future_to_loc[future]
+                try:
+                    result = future.result()
+                    collected_data.append(result)
+                    logger.info(f"🔄 [{i}/{len(locations)}] {loc['name']}: {'✅' if result.get('success', True) else '❌'}")
+                except Exception as ex:
+                    logger.error(f"❌ Unknown error with {loc['name']}: {ex}")
+                    collected_data.append({
+                        "timestamp": get_vietnam_time().strftime("%Y-%m-%d %H:%M:%S"),
+                        "location": loc["name"],
+                        "province": loc["province"],
+                        "lat": loc["lat"],
+                        "lon": loc["lon"],
+                        "data_sources": [],
+                        "success": False,
+                        "error_message": str(ex)
+                    })
+                time.sleep(1 if len(locations) > 60 else 0.05)
+        if not collected_data:
+            raise HTTPException(status_code=404, detail="No data collected")
+        df = pd.DataFrame(collected_data)
+        storage_dir = Path(r"D:\Project_Dp-15\Air_Quality\data_storage\soil\raw")
+        storage_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_path = storage_dir / f"enhanced_soil_data_{timestamp}.csv"
+        df.to_csv(file_path, index=False, encoding='utf-8-sig')
+        return {
+            "csv_file": str(file_path),
+            "csv_content": df.to_csv(index=False, encoding='utf-8-sig'),
+            "total_records": len(df),
+            "total_locations": len(collected_data),
+            "success": True,
+            "fields": list(df.columns)
+        }
+    except Exception as e:
+        logger.error(f"❌ Error in run_enhanced_soil_crawl: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+def main():
+    """Run enhanced soil crawl from command line for test/demo."""
+    logger.info("🌱 Starting enhanced soil crawl (CLI mode)...")
+    all_locations = load_locations_from_json()
+    locations = all_locations
+    logger.info(f"🌍 Will crawl {len(locations)} locations")
+    world_bank_data = get_world_bank_climate_data()
+    collected_data = []
+    max_workers = min(5, len(locations))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_loc = {
+            executor.submit(crawl_soil_location, loc, world_bank_data): loc
+            for loc in locations
+        }
+        for i, future in enumerate(concurrent.futures.as_completed(future_to_loc), 1):
+            loc = future_to_loc[future]
+            try:
+                result = future.result()
+                collected_data.append(result)
+                logger.info(f"🔄 [{i}/{len(locations)}] {loc['name']}: {'✅' if result.get('success', True) else '❌'}")
+            except Exception as ex:
+                logger.error(f"❌ Unknown error with {loc['name']}: {ex}")
+                collected_data.append({
+                    "timestamp": get_vietnam_time().strftime("%Y-%m-%d %H:%M:%S"),
+                    "location": loc["name"],
+                    "province": loc["province"],
+                    "lat": loc["lat"],
+                    "lon": loc["lon"],
+                    "data_sources": [],
+                    "success": False,
+                    "error_message": str(ex)
+                })
+            time.sleep(1 if len(locations) > 60 else 0.05)
     if collected_data:
         df = pd.DataFrame(collected_data)
         storage_dir = Path(r"D:\Project_Dp-15\Air_Quality\data_storage\soil\raw")

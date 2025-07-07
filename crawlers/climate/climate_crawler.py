@@ -8,17 +8,17 @@ import requests
 from datetime import datetime
 import pytz
 from dotenv import load_dotenv
+import concurrent.futures
+import time
 
 # Load environment variables
-config_dir = Path(__file__).parent.parent.parent / "config"
-env_file = config_dir / ".env"
-
+env_file = Path(r"D:\Project_Dp-15\Air_Quality\configs\.env")
 if env_file.exists():
-    load_dotenv(env_file)
+    load_dotenv(dotenv_path=env_file)
     print(f"✅ Đã load file .env từ: {env_file}")
 else:
     print(f"⚠️  Không tìm thấy file .env tại: {env_file}")
-    load_dotenv()
+    load_dotenv()  # fallback: load từ mặc định
 
 app = FastAPI()
 
@@ -28,52 +28,19 @@ BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 def load_locations_from_json() -> List[Dict[str, Any]]:
     """
-    Load danh sách địa điểm từ file JSON.
-    Ưu tiên: locations.json > locations_vietnam.json > fallback default
+    Luôn load danh sách địa điểm từ file D:\Project_Dp-15\Air_Quality\configs\locations_vietnam.json.
     """
-    # Thử các đường dẫn file JSON
-    possible_paths = [
-        config_dir / "locations.json",
-        config_dir / "locations_vietnam.json", 
-        Path(__file__).parent / "locations.json",
-        Path(__file__).parent / "config" / "locations.json"
-    ]
-    
-    for json_path in possible_paths:
-        if json_path.exists():
-            try:
-                with open(json_path, 'r', encoding='utf-8') as f:
-                    locations = json.load(f)
-                    if isinstance(locations, list) and len(locations) > 0:
-                        print(f"✅ Đã load {len(locations)} địa điểm từ: {json_path}")
-                        return locations
-            except Exception as ex:
-                print(f"❌ Lỗi khi đọc file {json_path}: {ex}")
-                continue
-    
-    # Fallback: thử load từ biến môi trường
-    print("⚠️  Không tìm thấy file JSON, thử load từ biến môi trường...")
-    return load_locations_from_env()
-
-def load_locations_from_env() -> List[Dict[str, Any]]:
-    """
-    Load danh sách địa điểm từ biến môi trường (phương pháp cũ).
-    """
-    env_val = os.getenv("VIETNAM_LOCATIONS")
-    if env_val:
+    json_path = Path(r"D:\Project_Dp-15\Air_Quality\configs\locations_vietnam.json")
+    if json_path.exists():
         try:
-            # Làm sạch và chuyển đổi format
-            env_val_clean = env_val.replace("'", '"')
-            env_val_clean = "".join([line.strip() for line in env_val_clean.splitlines()])
-            locations = json.loads(env_val_clean)
-            if isinstance(locations, list):
-                print(f"✅ Đã load {len(locations)} địa điểm từ biến môi trường")
-                return locations
+            with open(json_path, 'r', encoding='utf-8') as f:
+                locations = json.load(f)
+                if isinstance(locations, list) and len(locations) > 0:
+                    print(f"✅ Đã load {len(locations)} địa điểm từ: {json_path}")
+                    return locations
         except Exception as ex:
-            print(f"❌ Không parse được VIETNAM_LOCATIONS từ env: {ex}")
-    
-    # Fallback cuối cùng
-    print("⚠️  Sử dụng danh sách địa điểm mặc định")
+            print(f"❌ Lỗi khi đọc file {json_path}: {ex}")
+    print("⚠️  Không tìm thấy hoặc lỗi file locations_vietnam.json, sử dụng fallback mặc định.")
     return [
         {"name": "Hanoi", "lat": 21.0285, "lon": 105.8542, "province": "Hanoi"},
         {"name": "Ho Chi Minh City", "lat": 10.7769, "lon": 106.7009, "province": "Ho Chi Minh City"},
@@ -193,15 +160,95 @@ def create_locations_json_file():
         {'name': 'Tay Ninh', 'alt_names': ['Tây Ninh'], 'province': 'Tay Ninh', 'lat': 11.3100, 'lon': 106.0983}
     ]
     
-    # Tạo file JSON
-    config_dir.mkdir(parents=True, exist_ok=True)
-    json_path = config_dir / "locations_vietnam.json"
-    
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump(vietnam_locations, f, ensure_ascii=False, indent=2)
-    
-    print(f"✅ Đã tạo file cấu hình: {json_path}")
-    return json_path
+def crawl_location(location, api_key, base_url, crawl_time):
+    """Crawl dữ liệu khí hậu cho 1 location, trả về dict kết quả."""
+    try:
+        params = {
+            "lat": location["lat"],
+            "lon": location["lon"],
+            "appid": api_key,
+            "units": "metric"
+        }
+        response = requests.get(base_url, params=params, timeout=20)
+        if response.status_code != 200:
+            return {
+                "timestamp": crawl_time,
+                "location": location["name"],
+                "province": location["province"],
+                "lat": location["lat"],
+                "lon": location["lon"],
+                "success": False,
+                "error_code": response.status_code,
+                "error_message": response.text
+            }
+
+        weather_data = response.json()
+        dt_utc = datetime.utcfromtimestamp(weather_data["dt"])
+        dt_vn = get_vietnam_time(dt_utc)
+
+        sunrise = sunset = None
+        if "sys" in weather_data:
+            if "sunrise" in weather_data["sys"]:
+                sunrise = datetime.fromtimestamp(
+                    weather_data["sys"]["sunrise"], pytz.utc
+                ).astimezone(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%Y-%m-%d %H:%M:%S")
+            if "sunset" in weather_data["sys"]:
+                sunset = datetime.fromtimestamp(
+                    weather_data["sys"]["sunset"], pytz.utc
+                ).astimezone(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%Y-%m-%d %H:%M:%S")
+
+        dew_point = weather_data.get("main", {}).get("dew_point")
+        uvi = weather_data.get("uvi")
+        weather_icon = weather_data["weather"][0].get("icon") if weather_data.get("weather") else None
+        country = weather_data.get("sys", {}).get("country")
+        timezone_val = weather_data.get("timezone")
+        coord_string = f"{location['lat']},{location['lon']}"
+
+        return {
+            "timestamp": dt_vn.strftime("%Y-%m-%d %H:%M:%S"),
+            "crawl_time": crawl_time,
+            "location": location["name"],
+            "province": location["province"],
+            "lat": location["lat"],
+            "lon": location["lon"],
+            "coord_string": coord_string,
+            "country": country,
+            "timezone": timezone_val,
+            "temperature": weather_data["main"]["temp"],
+            "feels_like": weather_data["main"].get("feels_like"),
+            "temp_min": weather_data["main"].get("temp_min"),
+            "temp_max": weather_data["main"].get("temp_max"),
+            "humidity": weather_data["main"]["humidity"],
+            "pressure": weather_data["main"].get("pressure"),
+            "dew_point": dew_point,
+            "uvi": uvi,
+            "rainfall": weather_data.get("rain", {}).get("1h", 0.0),
+            "wind_speed": weather_data["wind"].get("speed"),
+            "wind_deg": weather_data["wind"].get("deg"),
+            "wind_gust": weather_data["wind"].get("gust"),
+            "clouds": weather_data.get("clouds", {}).get("all"),
+            "visibility": weather_data.get("visibility"),
+            "weather_condition": weather_data["weather"][0]["description"] if weather_data.get("weather") else None,
+            "weather_main": weather_data["weather"][0].get("main") if weather_data.get("weather") else None,
+            "weather_icon": weather_icon,
+            "sunrise": sunrise,
+            "sunset": sunset,
+            "source": "openweather",
+            "success": True,
+            "error_code": None,
+            "error_message": None
+        }
+    except Exception as ex:
+        return {
+            "timestamp": crawl_time,
+            "location": location["name"],
+            "province": location["province"],
+            "lat": location["lat"],
+            "lon": location["lon"],
+            "success": False,
+            "error_code": None,
+            "error_message": str(ex)
+        }
 
 @app.post("/run_climate_crawl")
 async def run_climate_crawl(request: Request):
@@ -232,103 +279,33 @@ async def run_climate_crawl(request: Request):
         print(f"🌍 Sẽ crawl dữ liệu cho {len(locations)} địa điểm")
         
         data = []
-        for i, location in enumerate(locations, 1):
-            print(f"🔄 [{i}/{len(locations)}] Đang crawl {location['name']}...")
-            params = {
-                "lat": location["lat"],
-                "lon": location["lon"],
-                "appid": OPENWEATHER_API_KEY,
-                "units": "metric"
+        crawl_time = datetime.now(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%Y-%m-%d %H:%M:%S")
+        max_workers = min(10, len(locations))  # Tối đa 10 luồng, tránh vượt rate limit
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_loc = {
+                executor.submit(crawl_location, loc, OPENWEATHER_API_KEY, BASE_URL, crawl_time): loc
+                for loc in locations
             }
-            crawl_time = datetime.now(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%Y-%m-%d %H:%M:%S")
-            try:
-                response = requests.get(BASE_URL, params=params, timeout=20)
-                if response.status_code != 200:
-                    print(f"❌ Lỗi API cho {location['name']}: {response.status_code} - {response.text}")
+            for i, future in enumerate(concurrent.futures.as_completed(future_to_loc), 1):
+                loc = future_to_loc[future]
+                try:
+                    result = future.result()
+                    print(f"🔄 [{i}/{len(locations)}] {loc['name']}: {'✅' if result.get('success') else '❌'}")
+                    data.append(result)
+                except Exception as ex:
+                    print(f"❌ Lỗi không xác định với {loc['name']}: {ex}")
                     data.append({
                         "timestamp": crawl_time,
-                        "location": location["name"],
-                        "province": location["province"],
-                        "lat": location["lat"],
-                        "lon": location["lon"],
+                        "location": loc["name"],
+                        "province": loc["province"],
+                        "lat": loc["lat"],
+                        "lon": loc["lon"],
                         "success": False,
-                        "error_code": response.status_code,
-                        "error_message": response.text
+                        "error_code": None,
+                        "error_message": str(ex)
                     })
-                    continue
-
-                weather_data = response.json()
-                dt_utc = datetime.utcfromtimestamp(weather_data["dt"])
-                dt_vn = get_vietnam_time(dt_utc)
-                
-                # Xử lý dữ liệu thời gian
-                sunrise = sunset = None
-                if "sys" in weather_data:
-                    if "sunrise" in weather_data["sys"]:
-                        sunrise = datetime.fromtimestamp(
-                            weather_data["sys"]["sunrise"], pytz.utc
-                        ).astimezone(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%Y-%m-%d %H:%M:%S")
-                    if "sunset" in weather_data["sys"]:
-                        sunset = datetime.fromtimestamp(
-                            weather_data["sys"]["sunset"], pytz.utc
-                        ).astimezone(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%Y-%m-%d %H:%M:%S")
-                
-                # Thêm các trường nâng cao
-                dew_point = weather_data.get("main", {}).get("dew_point")
-                uvi = weather_data.get("uvi")
-                weather_icon = weather_data["weather"][0].get("icon") if weather_data.get("weather") else None
-                country = weather_data.get("sys", {}).get("country")
-                timezone_val = weather_data.get("timezone")
-                coord_string = f"{location['lat']},{location['lon']}"
-                
-                data.append({
-                    "timestamp": dt_vn.strftime("%Y-%m-%d %H:%M:%S"),
-                    "crawl_time": crawl_time,
-                    "location": location["name"],
-                    "province": location["province"],
-                    "lat": location["lat"],
-                    "lon": location["lon"],
-                    "coord_string": coord_string,
-                    "country": country,
-                    "timezone": timezone_val,
-                    "temperature": weather_data["main"]["temp"],
-                    "feels_like": weather_data["main"].get("feels_like"),
-                    "temp_min": weather_data["main"].get("temp_min"),
-                    "temp_max": weather_data["main"].get("temp_max"),
-                    "humidity": weather_data["main"]["humidity"],
-                    "pressure": weather_data["main"].get("pressure"),
-                    "dew_point": dew_point,
-                    "uvi": uvi,
-                    "rainfall": weather_data.get("rain", {}).get("1h", 0.0),
-                    "wind_speed": weather_data["wind"].get("speed"),
-                    "wind_deg": weather_data["wind"].get("deg"),
-                    "wind_gust": weather_data["wind"].get("gust"),
-                    "clouds": weather_data.get("clouds", {}).get("all"),
-                    "visibility": weather_data.get("visibility"),
-                    "weather_condition": weather_data["weather"][0]["description"] if weather_data.get("weather") else None,
-                    "weather_main": weather_data["weather"][0].get("main") if weather_data.get("weather") else None,
-                    "weather_icon": weather_icon,
-                    "sunrise": sunrise,
-                    "sunset": sunset,
-                    "source": "openweather",
-                    "success": True,
-                    "error_code": None,
-                    "error_message": None
-                })
-                
-            except Exception as ex:
-                print(f"❌ Lỗi khi crawl {location['name']}: {ex}")
-                data.append({
-                    "timestamp": crawl_time,
-                    "location": location["name"],
-                    "province": location["province"],
-                    "lat": location["lat"],
-                    "lon": location["lon"],
-                    "success": False,
-                    "error_code": None,
-                    "error_message": str(ex)
-                })
-                continue
+                # Nếu dùng free tier, nên sleep nhẹ để tránh rate limit (60 req/phút)
+                time.sleep(1.1 if len(locations) > 60 else 0.05)
 
         if not data:
             raise HTTPException(status_code=404, detail="Không thu thập được dữ liệu")
@@ -370,12 +347,6 @@ def get_locations():
 
 def main():
     """Hàm main để chạy crawl từ command line"""
-    
-    # Tạo file JSON config nếu chưa có
-    if not (config_dir / "locations_vietnam.json").exists():
-        print("📁 Tạo file cấu hình locations...")
-        create_locations_json_file()
-    
     if not OPENWEATHER_API_KEY:
         print("❌ OPENWEATHER_API_KEY không được thiết lập!")
         return
@@ -385,107 +356,35 @@ def main():
     # Load locations
     locations = load_locations_from_json()
     
-    # Có thể giới hạn số lượng để test
-    # locations = locations[:5]  # Chỉ lấy 5 địa điểm đầu tiên
-    
     print(f"🌍 Sẽ crawl {len(locations)} địa điểm")
     
     data = []
-    for i, location in enumerate(locations, 1):
-        print(f"🔄 [{i}/{len(locations)}] Crawling {location['name']}...")
-        params = {
-            "lat": location["lat"],
-            "lon": location["lon"],
-            "appid": OPENWEATHER_API_KEY,
-            "units": "metric"
+    crawl_time = datetime.now(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%Y-%m-%d %H:%M:%S")
+    max_workers = min(10, len(locations))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_loc = {
+            executor.submit(crawl_location, loc, OPENWEATHER_API_KEY, BASE_URL, crawl_time): loc
+            for loc in locations
         }
-        crawl_time = datetime.now(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%Y-%m-%d %H:%M:%S")
-        try:
-            response = requests.get(BASE_URL, params=params, timeout=20)
-            if response.status_code != 200:
-                print(f"❌ Lỗi {location['name']}: {response.status_code} - {response.text}")
+        for i, future in enumerate(concurrent.futures.as_completed(future_to_loc), 1):
+            loc = future_to_loc[future]
+            try:
+                result = future.result()
+                print(f"🔄 [{i}/{len(locations)}] {loc['name']}: {'✅' if result.get('success') else '❌'}")
+                data.append(result)
+            except Exception as ex:
+                print(f"❌ Lỗi không xác định với {loc['name']}: {ex}")
                 data.append({
                     "timestamp": crawl_time,
-                    "location": location["name"],
-                    "province": location["province"],
-                    "lat": location["lat"],
-                    "lon": location["lon"],
+                    "location": loc["name"],
+                    "province": loc["province"],
+                    "lat": loc["lat"],
+                    "lon": loc["lon"],
                     "success": False,
-                    "error_code": response.status_code,
-                    "error_message": response.text
+                    "error_code": None,
+                    "error_message": str(ex)
                 })
-                continue
-
-            weather_data = response.json()
-            dt_utc = datetime.utcfromtimestamp(weather_data["dt"])
-            dt_vn = get_vietnam_time(dt_utc)
-            
-            sunrise = sunset = None
-            if "sys" in weather_data:
-                if "sunrise" in weather_data["sys"]:
-                    sunrise = datetime.fromtimestamp(
-                        weather_data["sys"]["sunrise"], pytz.utc
-                    ).astimezone(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%Y-%m-%d %H:%M:%S")
-                if "sunset" in weather_data["sys"]:
-                    sunset = datetime.fromtimestamp(
-                        weather_data["sys"]["sunset"], pytz.utc
-                    ).astimezone(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%Y-%m-%d %H:%M:%S")
-            
-            dew_point = weather_data.get("main", {}).get("dew_point")
-            uvi = weather_data.get("uvi")
-            weather_icon = weather_data["weather"][0].get("icon") if weather_data.get("weather") else None
-            country = weather_data.get("sys", {}).get("country")
-            timezone_val = weather_data.get("timezone")
-            coord_string = f"{location['lat']},{location['lon']}"
-            
-            data.append({
-                "timestamp": dt_vn.strftime("%Y-%m-%d %H:%M:%S"),
-                "crawl_time": crawl_time,
-                "location": location["name"],
-                "province": location["province"],
-                "lat": location["lat"],
-                "lon": location["lon"],
-                "coord_string": coord_string,
-                "country": country,
-                "timezone": timezone_val,
-                "temperature": weather_data["main"]["temp"],
-                "feels_like": weather_data["main"].get("feels_like"),
-                "temp_min": weather_data["main"].get("temp_min"),
-                "temp_max": weather_data["main"].get("temp_max"),
-                "humidity": weather_data["main"]["humidity"],
-                "pressure": weather_data["main"].get("pressure"),
-                "dew_point": dew_point,
-                "uvi": uvi,
-                "rainfall": weather_data.get("rain", {}).get("1h", 0.0),
-                "wind_speed": weather_data["wind"].get("speed"),
-                "wind_deg": weather_data["wind"].get("deg"),
-                "wind_gust": weather_data["wind"].get("gust"),
-                "clouds": weather_data.get("clouds", {}).get("all"),
-                "visibility": weather_data.get("visibility"),
-                "weather_condition": weather_data["weather"][0]["description"] if weather_data.get("weather") else None,
-                "weather_main": weather_data["weather"][0].get("main") if weather_data.get("weather") else None,
-                "weather_icon": weather_icon,
-                "sunrise": sunrise,
-                "sunset": sunset,
-                "source": "openweather",
-                "success": True,
-                "error_code": None,
-                "error_message": None
-            })
-            print(f"✅ OK: {location['name']}")
-        except Exception as ex:
-            print(f"❌ Lỗi {location['name']}: {ex}")
-            data.append({
-                "timestamp": crawl_time,
-                "location": location["name"],
-                "province": location["province"],
-                "lat": location["lat"],
-                "lon": location["lon"],
-                "success": False,
-                "error_code": None,
-                "error_message": str(ex)
-            })
-
+            time.sleep(1.1 if len(locations) > 60 else 0.05)
     if data:
         df = pd.DataFrame(data)
         storage_dir = Path(r"D:\Project_Dp-15\Air_Quality\data_storage\climate\raw")

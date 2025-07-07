@@ -2,12 +2,12 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-COPY Cleaners/ ./Cleaners/
+COPY crawlers/air/air_crawler.py ./crawlers/air/air_crawler.py
 COPY configs/requirements.txt ./requirements.txt
 COPY configs/.env ./configs/.env
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 8091
+EXPOSE 8081
 
-# You may want to override CMD in docker-compose for each cleaner type
+CMD ["uvicorn", "crawlers.air.air_crawler:app", "--host", "0.0.0.0", "--port", "8081"]
