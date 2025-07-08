@@ -73,22 +73,32 @@ async def air_cleaner_api(request: Request):
         logger.error(f"Failed to parse JSON body: {ex}")
         return {"status": "error", "message": f"Failed to parse JSON body: {ex}"}
 
+    # --- BỔ SUNG LOG ĐỂ DEBUG DỮ LIỆU ĐẦU VÀO ---
+    logger.info(f"Received request body: {data}")
+
     csv_file = data.get("csv_file")
     csv_content = data.get("csv_content")
-    
+
+    # Bổ sung kiểm tra csv_content
+    if not csv_content and not csv_file:
+        logger.error("No csv_content or csv_file provided in request")
+        return {"status": "error", "message": "No csv_content or csv_file provided in request"}
+
     try:
         source_folder = CLEANER_DIR  # Ensure always defined
         if csv_content:
-            df = pd.read_csv(io.StringIO(csv_content))
+            try:
+                df = pd.read_csv(io.StringIO(csv_content))
+            except Exception as ex:
+                logger.error(f"Error reading csv_content: {ex}")
+                return {"status": "error", "message": f"Error reading csv_content: {ex}"}
             source_folder = CLEANER_DIR
         elif csv_file:
             file_path = Path(csv_file)
-            # Nếu truyền đường dẫn tương đối, hiểu là file trong CRAWL_DATA_DIR
             if not file_path.is_absolute():
                 file_path = CRAWL_DATA_DIR / file_path
             if file_path.exists() and file_path.is_file():
                 df = pd.read_csv(file_path)
-                # Lưu file clean vào cùng tháng với file gốc
                 try:
                     month_folder = file_path.parent.name
                     source_folder = CLEANER_DIR / month_folder
@@ -154,6 +164,7 @@ async def air_cleaner_api(request: Request):
                 "message": f"Database connection failed: {db_test_err}"
             }
 
+        # --- CHỈ GHI ĐÈ (replace) KHI LÀ LẦN ĐẦU HOẶC ĐƯỢC YÊU CẦU ---
         save_to_postgres(mapping['City'], 'City', engine, if_exists='replace')
         save_to_postgres(mapping['Source'], 'Source', engine, if_exists='replace')
         save_to_postgres(mapping['WeatherCondition'], 'WeatherCondition', engine, if_exists='replace')

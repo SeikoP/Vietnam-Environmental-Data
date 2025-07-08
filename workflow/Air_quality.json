@@ -1,24 +1,23 @@
 {
-  "name": "My workflow 2",
+  "name": "Air_quality",
   "nodes": [
     {
       "parameters": {
         "requestMethod": "POST",
-        "url": "http://api:8000/air-process-data",
+        "url": "http://analytics_engine:8000/analyze_air_quality",
         "jsonParameters": true,
-        "options": {
-          "timeout": 90000
-        },
-        "bodyParametersJson": "={{ { \"data\": $json.data, \"include_health_recommendations\": true, \"alert_threshold\": 100 } }}"
+        "options": {},
+        "bodyParametersJson": "={{ { \"data\": $json.data } }}"
       },
-      "id": "14d08676-a65a-4197-9271-c9f59607e384",
+      "id": "c985cae0-ad9a-48de-ab5f-0cde9ba01b40",
       "name": "Analyze Air Quality",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
-        620,
-        -320
-      ]
+        -1320,
+        -860
+      ],
+      "disabled": true
     },
     {
       "parameters": {
@@ -26,17 +25,90 @@
         "url": "http://unified_cleaner:8090/air_cleaner/air_cleaner",
         "jsonParameters": true,
         "options": {
-          "timeout": 120000
+          "timeout": 120000,
+          "maxTries": 3,
+          "retry": true,
+          "retryOnFail": true,
+          "retryDelay": 10000
         },
         "bodyParametersJson": "={{ { \"csv_content\": $json.csv_content, \"timestamp\": $json.timestamp, \"data_type\": \"air_quality\", \"quality_check\": true, \"backup\": true } }}"
       },
-      "id": "5ef7464e-d6d9-4701-a1db-dbcf3624a522",
+      "id": "5097bf0c-a1e3-421e-b24a-de619a5a71da",
       "name": "Clean Air Data",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
-        380,
-        -320
+        -1680,
+        -580
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://unified_cleaner:8090/water_cleaner/clean_water_data",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 120000,
+          "maxTries": 3,
+          "retry": true,
+          "retryOnFail": true,
+          "retryDelay": 10000
+        },
+        "bodyParametersJson": "={{ { \"csv_content\": $json.csv_content, \"timestamp\": $json.timestamp, \"data_type\": \"water_quality\", \"quality_check\": true, \"backup\": true } }}"
+      },
+      "id": "7fbbfe76-53fa-4bb0-802e-462649fde90a",
+      "name": "Clean Water Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        -1680,
+        -340
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://unified_cleaner:8090/climate_cleaner/clean_climate_data",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 120000,
+          "maxTries": 3,
+          "retry": true,
+          "retryOnFail": true,
+          "retryDelay": 10000
+        },
+        "bodyParametersJson": "={{ { \"csv_content\": $json.csv_content, \"timestamp\": $json.timestamp, \"data_type\": \"climate\", \"quality_check\": true, \"backup\": true } }}"
+      },
+      "id": "8859eda1-e1e8-4f5e-9f37-b0fd0189f1c1",
+      "name": "Clean Climate Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        -1680,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://unified_cleaner:8090/soil_cleaner/clean_soil_data",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 120000,
+          "maxTries": 3,
+          "retry": true,
+          "retryOnFail": true,
+          "retryDelay": 10000
+        },
+        "bodyParametersJson": "={{ { \"csv_content\": $json.csv_content, \"timestamp\": $json.timestamp, \"data_type\": \"soil_quality\", \"quality_check\": true, \"backup\": true } }}"
+      },
+      "id": "56366b94-dcdc-4acf-a59c-d523fe55c96b",
+      "name": "Clean Soil Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        -1680,
+        200
       ]
     },
     {
@@ -52,13 +124,13 @@
         },
         "options": {}
       },
-      "id": "3ce73001-b3b6-43d4-a9e1-bd047c71ece1",
+      "id": "9bcae384-6439-4aff-aead-09434856aab2",
       "name": "Check Data Quality Soil",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        160,
-        480
+        -1900,
+        220
       ]
     },
     {
@@ -74,13 +146,13 @@
         },
         "options": {}
       },
-      "id": "e7b11964-1bef-4be0-bb8c-e941b4c4ce9c",
+      "id": "0bdd6f46-9f17-4145-bfe2-04bd29ff7bf4",
       "name": "Check Data Quality Climate",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        160,
-        240
+        -1900,
+        -20
       ]
     },
     {
@@ -96,13 +168,13 @@
         },
         "options": {}
       },
-      "id": "318603ff-d1e3-49be-bf9b-658c28264e74",
+      "id": "7e614ddd-f9b3-4918-b463-42ac83d17fee",
       "name": "Check Data Quality Water",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        160,
-        0
+        -1900,
+        -260
       ]
     },
     {
@@ -118,13 +190,13 @@
         },
         "options": {}
       },
-      "id": "94ee9913-db1c-4531-8158-e8f51b23f22e",
+      "id": "1fc0c793-d009-4446-96de-a6573673626d",
       "name": "Check Data Quality Air",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        160,
-        -220
+        -1900,
+        -480
       ]
     },
     {
@@ -137,13 +209,13 @@
         },
         "bodyParametersJson": "={{ { \"csv_content\": $json.csv_content, \"timestamp\": $json.timestamp, \"data_type\": \"soil_quality\", \"quality_check\": true, \"backup\": true } }}"
       },
-      "id": "9f043d98-64e2-45f1-8aab-fd2231ddd218",
+      "id": "56366b94-dcdc-4acf-a59c-d523fe55c96b",
       "name": "Clean Soil Data",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
-        380,
-        460
+        -1680,
+        200
       ]
     },
     {
@@ -156,13 +228,13 @@
         },
         "bodyParametersJson": "={{ { \"csv_content\": $json.csv_content, \"timestamp\": $json.timestamp, \"data_type\": \"water_quality\", \"quality_check\": true, \"backup\": true } }}"
       },
-      "id": "7aedabf0-7caa-4ccd-bb4c-6522ceb064fe",
+      "id": "7fbbfe76-53fa-4bb0-802e-462649fde90a",
       "name": "Clean Water Data",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
-        380,
-        -80
+        -1680,
+        -340
       ]
     },
     {
@@ -175,13 +247,13 @@
         },
         "bodyParametersJson": "={{ { \"csv_content\": $json.csv_content, \"timestamp\": $json.timestamp, \"data_type\": \"climate\", \"quality_check\": true, \"backup\": true } }}"
       },
-      "id": "be1e6a7e-14a6-4356-a1aa-4b4b1746e6fe",
+      "id": "8859eda1-e1e8-4f5e-9f37-b0fd0189f1c1",
       "name": "Clean Climate Data",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
-        380,
-        200
+        -1680,
+        -60
       ]
     },
     {
@@ -209,13 +281,13 @@
         },
         "options": {}
       },
-      "id": "1d1d339b-1170-406b-b13a-8b05763b8de2",
+      "id": "e829b6c0-05fe-4d81-a47b-2574341d539c",
       "name": "Validate Soil Quality",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -40,
-        560
+        -2100,
+        300
       ]
     },
     {
@@ -243,13 +315,13 @@
         },
         "options": {}
       },
-      "id": "0f1dde18-e795-46cb-a0aa-ebad5d40bc98",
+      "id": "45bbb3fe-7126-413a-8aed-7becbca76d68",
       "name": "Validate Climate Data",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -40,
-        340
+        -2100,
+        80
       ]
     },
     {
@@ -277,13 +349,13 @@
         },
         "options": {}
       },
-      "id": "73fdd18d-cb76-4747-9bfe-f6a25134e1a7",
+      "id": "a76ecc50-99d3-4274-ada4-ca9838f79e2a",
       "name": "Validate Water Quality",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -40,
-        120
+        -2100,
+        -140
       ]
     },
     {
@@ -311,13 +383,13 @@
         },
         "options": {}
       },
-      "id": "922930bf-90ab-465c-a70e-75f976d2ec2e",
+      "id": "65d4c813-1a0f-4a14-97ba-5cd44326b517",
       "name": "Validate Air Quality",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -40,
-        -80
+        -2100,
+        -340
       ]
     },
     {
@@ -328,13 +400,13 @@
           "timeout": 240000
         }
       },
-      "id": "70c83a1d-9125-4e5e-a7f4-16dcf1807bf0",
+      "id": "53291d68-b401-4f82-8019-9c3107ac63a0",
       "name": "Soil Quality Crawler",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
-        -260,
-        560
+        -2320,
+        300
       ]
     },
     {
@@ -345,32 +417,31 @@
           "timeout": 180000
         }
       },
-      "id": "88b39c72-27f9-4cf2-81c5-835cd9f9edb1",
+      "id": "7dc949ee-a6ca-45e9-8e16-1d239c4ec92e",
       "name": "Climate Data Crawler",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
-        -260,
-        340
+        -2320,
+        80
       ]
     },
     {
       "parameters": {
         "requestMethod": "POST",
-        "url": "http://water_quality_service:8082/run_water_crawl",
+        "url": "http://water_crawler:8082/run_water_crawl",
         "options": {
           "timeout": 180000
         }
       },
-      "id": "54e38e6e-c5fc-4b89-b5bf-f59777ddaefc",
+      "id": "181d9903-8d90-4f3c-bb63-e3baa1308bea",
       "name": "Water Quality Crawler",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
-        -260,
-        120
-      ],
-      "disabled": true
+        -2320,
+        -140
+      ]
     },
     {
       "parameters": {
@@ -380,13 +451,13 @@
           "timeout": 120000
         }
       },
-      "id": "216b1df0-c1bd-4071-8734-015f5070ac0c",
+      "id": "c326f9bd-c739-4bd2-b73c-e1a4e223c349",
       "name": "Air Quality Crawler",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
-        -260,
-        -80
+        -2320,
+        -340
       ]
     },
     {
@@ -405,13 +476,13 @@
         },
         "options": {}
       },
-      "id": "df424995-cb90-42b3-843a-11443cccb1db",
+      "id": "7e522744-516c-425c-871f-f2d61cf42d34",
       "name": "Set 12H Trigger",
       "type": "n8n-nodes-base.set",
       "typeVersion": 2,
       "position": [
-        -1180,
-        460
+        -3240,
+        200
       ]
     },
     {
@@ -430,13 +501,13 @@
         },
         "options": {}
       },
-      "id": "8a6a23d6-ffb2-409b-9e71-fb7117b011f5",
+      "id": "0a82456e-e9c5-44df-9513-a2ad85a73d86",
       "name": "Set 6H Trigger",
       "type": "n8n-nodes-base.set",
       "typeVersion": 2,
       "position": [
-        -1180,
-        260
+        -3240,
+        0
       ]
     },
     {
@@ -455,13 +526,13 @@
         },
         "options": {}
       },
-      "id": "68c56bee-f016-4383-8fa4-4d8e0017d84b",
+      "id": "1b0b250b-1934-40e5-bd3a-e37093e5c2ac",
       "name": "Set Hourly Trigger",
       "type": "n8n-nodes-base.set",
       "typeVersion": 2,
       "position": [
-        -1180,
-        60
+        -3240,
+        -200
       ]
     },
     {
@@ -475,13 +546,13 @@
           ]
         }
       },
-      "id": "d0841a48-57b3-488c-bd12-d5e96334e74a",
+      "id": "c5b771d5-a9db-42e2-a202-dc92e89bd58e",
       "name": "Master Trigger 12 Hours",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
       "position": [
-        -1380,
-        460
+        -3440,
+        200
       ]
     },
     {
@@ -495,13 +566,13 @@
           ]
         }
       },
-      "id": "23b0e767-594a-4083-acd1-83eaca93bb67",
+      "id": "d27789f8-c242-4d07-a329-c44f78efdbad",
       "name": "Master Trigger 6 Hours",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
       "position": [
-        -1380,
-        260
+        -3440,
+        0
       ]
     },
     {
@@ -514,13 +585,13 @@
           ]
         }
       },
-      "id": "e46fbc8a-856a-4231-999a-c3252932add3",
+      "id": "c8b36dee-30ae-4266-82ea-3ed0dae360bc",
       "name": "Master Trigger Hourly",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
       "position": [
-        -1380,
-        60
+        -3440,
+        -200
       ]
     },
     {
@@ -530,10 +601,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -880,
-        260
+        -2940,
+        0
       ],
-      "id": "47042150-6702-4c34-96ed-2ba3763fe53c",
+      "id": "8b4fc64b-b4c5-4bcf-bdb1-7e6ced83a533",
       "name": "Merge",
       "alwaysOutputData": true
     },
@@ -565,10 +636,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -680,
-        180
+        -2740,
+        -80
       ],
-      "id": "3c89d389-470d-42bf-a0cc-6819aeb1232a",
+      "id": "cec81c14-cce6-49e7-9f7e-9b0db591ad50",
       "name": "If",
       "alwaysOutputData": true
     },
@@ -600,246 +671,166 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -460,
-        360
+        -2520,
+        100
       ],
-      "id": "efc29038-faed-4683-be53-371bb34c47af",
+      "id": "91f46cd3-0dd0-4cea-8f64-a0b7ee5ba1ec",
       "name": "If1",
       "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "webhookUri": "https://discord.com/api/webhooks/1389325106513444965/p8wraTcjw7RLvEj5b3sb3DOhlzEgixS_S0tYButKqxYz1PV9_Jl5Q_1ajXxZwftq2WNX",
-        "text": "=✅ {{ $json[0].alert_message }}\n\nKhông có khu vực nào bị ảnh hưởng.\n\nThống kê:\n- Tổng địa điểm: {{ $json[0].statistics.total_locations }}\n- AQI trung bình: {{ $json[0].statistics.average_aqi }}\n- AQI cao nhất: {{ $json[0].statistics.max_aqi }}\n\nKhuyến nghị sức khỏe: {{ $json[0].global_health_recommendations }}",
-        "options": {}
-      },
-      "id": "1863bde9-c4d6-46ce-ba0a-4c170008d221",
-      "name": "Thông Báo Thành Công Discord",
-      "type": "n8n-nodes-base.discord",
-      "typeVersion": 1,
-      "position": [
-        1100,
-        -200
-      ]
-    },
-    {
-      "parameters": {
-        "webhookUri": "https://discord.com/api/webhooks/1389325106513444965/p8wraTcjw7RLvEj5b3sb3DOhlzEgixS_S0tYButKqxYz1PV9_Jl5Q_1ajXxZwftq2WNX",
-        "text": "=🚨 {{ $json[0].alert_message }}\n\nThống kê:\n- Tổng địa điểm: {{ $json[0].statistics.total_locations }}\n- AQI trung bình: {{ $json[0].statistics.average_aqi }}\n- AQI cao nhất: {{ $json[0].statistics.max_aqi }}\n\nKhuyến nghị sức khỏe: {{ $json[0].global_health_recommendations }}",
-        "options": {}
-      },
-      "id": "9ff13e99-ef6c-4606-8d9f-a6093bce18fc",
-      "name": "Cảnh báo",
-      "type": "n8n-nodes-base.discord",
-      "typeVersion": 1,
-      "position": [
-        1300,
-        -520
-      ]
-    },
-    {
-      "parameters": {
-        "webhookUri": "https://discord.com/api/webhooks/1389325106513444965/p8wraTcjw7RLvEj5b3sb3DOhlzEgixS_S0tYButKqxYz1PV9_Jl5Q_1ajXxZwftq2WNX",
-        "text": "=🚨 {{ $json[0].alert_message }}\n\nKhu vực bị ảnh hưởng: {{ $json[0].affected_areas }}\n\nThống kê:\n- Tổng địa điểm: {{ $json[0].statistics.total_locations }}\n- AQI trung bình: {{ $json[0].statistics.average_aqi }}\n- AQI cao nhất: {{ $json[0].statistics.max_aqi }}\n\nKhuyến nghị sức khỏe: {{ $json[0].global_health_recommendations }}",
-        "options": {}
-      },
-      "id": "86c9ca58-b135-459a-84fc-f41c45c8787d",
-      "name": "Cảnh báo1",
-      "type": "n8n-nodes-base.discord",
-      "typeVersion": 1,
-      "position": [
-        1300,
-        -360
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "a61f52af-36ea-4165-be39-6265a8598c43",
-              "leftValue": "={{ $json[0].affected_areas || '' }}",
-              "rightValue": "=",
-              "operator": {
-                "type": "string",
-                "operation": "notEmpty",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {
-          "ignoreCase": false
-        }
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        900,
-        -320
-      ],
-      "id": "ae181362-ddfc-43f5-a075-6587c7e682cc",
-      "name": "If2"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "441bd7a8-070f-4173-897a-e4abd999a9ed",
-              "leftValue": "={{ $json[0][\"affected_areas\"].length }}",
-              "rightValue": 1900,
-              "operator": {
-                "type": "number",
-                "operation": "gt"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        1100,
-        -440
-      ],
-      "id": "4df8982a-ac5f-4c06-a3ea-11b3763e56a7",
-      "name": "If3"
-    },
-    {
-      "parameters": {
-        "requestMethod": "POST",
-        "url": "http://analytics_engine:8000/analyze_air_quality",
-        "jsonParameters": true,
-        "bodyParametersJson": "={{ { \"data\": $json.data } }}"
-      },
-      "id": "analyze-air",
-      "name": "Analyze Air Quality",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 2,
-      "position": [
-        620,
-        -320
-      ]
     },
     {
       "parameters": {
         "requestMethod": "POST",
         "url": "http://analytics_engine:8000/analyze_soil_quality",
         "jsonParameters": true,
+        "options": {},
         "bodyParametersJson": "={{ { \"data\": $json.data } }}"
       },
-      "id": "analyze-soil",
+      "id": "3936918c-60fb-4c92-bb30-1467918e6b5e",
       "name": "Analyze Soil Quality",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
-        620,
-        460
-      ]
+        -1320,
+        -80
+      ],
+      "disabled": true
     },
     {
       "parameters": {
         "requestMethod": "POST",
         "url": "http://analytics_engine:8000/analyze_climate",
         "jsonParameters": true,
+        "options": {},
         "bodyParametersJson": "={{ { \"data\": $json.data } }}"
       },
-      "id": "analyze-climate",
+      "id": "f55086fd-be1a-478a-a5e6-5506e6fe850d",
       "name": "Analyze Climate",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
-        620,
-        200
-      ]
+        -1320,
+        -340
+      ],
+      "disabled": true
     },
     {
       "parameters": {
         "requestMethod": "POST",
         "url": "http://analytics_engine:8000/analyze_water_quality",
         "jsonParameters": true,
+        "options": {},
         "bodyParametersJson": "={{ { \"data\": $json.data } }}"
       },
-      "id": "analyze-water",
+      "id": "aebf6a7c-a1bd-431a-b1e2-bd15347fc13b",
       "name": "Analyze Water Quality",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
-        620,
-        -80
-      ]
+        -1320,
+        -620
+      ],
+      "disabled": true
     },
     {
       "parameters": {},
-      "id": "merge-all-analyses",
+      "id": "27a61f5b-a364-4982-849e-f04fdb83ba19",
       "name": "Merge All Analyses",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 2,
       "position": [
-        940,
-        180
-      ]
+        -1000,
+        -360
+      ],
+      "disabled": true
     },
     {
       "parameters": {
         "requestMethod": "POST",
         "url": "http://analytics_engine:8000/unified_analysis",
         "jsonParameters": true,
+        "options": {},
         "bodyParametersJson": "={{ { \"air_quality\": $json[0], \"water_quality\": $json[1], \"climate\": $json[2], \"soil_quality\": $json[3] } }}"
       },
-      "id": "unified-analysis",
+      "id": "1f570427-0da7-43d3-9cc7-9704522e7c36",
       "name": "Unified Environmental Analysis",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
-        1120,
-        180
+        -820,
+        -360
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "numberInputs": 4,
+        "chooseBranchMode": "={{ $json.status }}",
+        "useDataOfInput": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -1320,
+        200
+      ],
+      "id": "84a28a52-8570-4a50-88fc-7a2206042b23",
+      "name": "Merge1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "webhookUri": "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
+"text": "=🧹 **Kết quả tổng hợp các bước làm sạch dữ liệu**\\n\\n- Air: {{ $item(0).json.success ? '✅ Thành công' : '❌ Lỗi' }} ({{ $item(0).json.total_rows || 0 }} bản ghi)\\n- Water: {{ $item(1).json.success ? '✅ Thành công' : '❌ Lỗi' }} ({{ $item(1).json.total_rows || 0 }} bản ghi)\\n- Climate: {{ $item(2).json.success ? '✅ Thành công' : '❌ Lỗi' }} ({{ $item(2).json.total_rows || 0 }} bản ghi)\\n- Soil: {{ $item(3).json.success ? '✅ Thành công' : '❌ Lỗi' }} ({{ $item(3).json.total_rows || 0 }} bản ghi)\\n\\n⏰ Thời gian: {{ $now.toLocaleString('vi-VN') }}",
+        "options": {}
+      },
+      "id": "clean-discord-summary",
+      "name": "Discord Clean Summary",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 1,
+      "position": [
+        -1500,
+        -200
       ]
     },
     {
       "parameters": {
-        "value": "Sau khi dữ liệu được làm sạch bởi unified_cleaner, node này gửi dữ liệu sang AI/ML engine để phân tích, dự báo, sinh cảnh báo và khuyến nghị sức khỏe. Kết quả phân tích sẽ được sử dụng cho các bước tiếp theo như gửi cảnh báo Discord hoặc lưu trữ."
+        "numberInputs": 4
       },
-      "id": "note-ai-analysis",
-      "name": "Ghi chú: Phân tích AI",
-      "type": "n8n-nodes-base.note",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
       "position": [
-        500,
-        -200
-      ]
+        -1580,
+        -340
+      ],
+      "id": "merge-clean-results",
+      "name": "Merge Clean Results",
+      "alwaysOutputData": true
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "Master Trigger Hourly": [
+      {
+        "json": {
+          "name": "First item",
+          "code": 1
+        }
+      },
+      {
+        "json": {
+          "name": "Second item",
+          "code": 2
+        }
+      }
+    ]
+  },
   "connections": {
     "Clean Air Data": {
       "main": [
         [
           {
-            "node": "Analyze Air Quality",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "note-ai-analysis",
+            "node": "merge-clean-results",
             "type": "main",
             "index": 0
           }
@@ -860,11 +851,6 @@
     "Analyze Air Quality": {
       "main": [
         [
-          {
-            "node": "If2",
-            "type": "main",
-            "index": 0
-          },
           {
             "node": "Merge All Analyses",
             "type": "main",
@@ -913,6 +899,11 @@
             "node": "Analyze Soil Quality",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 3
           }
         ]
       ]
@@ -924,6 +915,11 @@
             "node": "Analyze Climate",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 2
           }
         ]
       ]
@@ -935,6 +931,11 @@
             "node": "Analyze Water Quality",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
           }
         ]
       ]
@@ -1145,42 +1146,6 @@
         ]
       ]
     },
-    "If2": {
-      "main": [
-        [
-          {
-            "node": "If3",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Thông Báo Thành Công Discord",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "If3": {
-      "main": [
-        [
-          {
-            "node": "Cảnh báo",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Cảnh báo1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Analyze Water Quality": {
       "main": [
         [
@@ -1226,16 +1191,35 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "20d25b7c-6179-4032-9aef-a687aee39309",
+  "versionId": "4771d06c-b699-47a6-9497-5aac678971b5",
   "meta": {
+    "templateCredsSetupCompleted": true,
     "instanceId": "3d7d794ec097e8493e9b682ddc5b6c60418f0bde8d02fd4e6f87d1765a52aebb"
   },
-  "id": "VYwIWkBboQsrtM4S",
+  "id": "FP3BmGh1KCxkVQDa",
   "tags": [
+    {
+      "createdAt": "2025-06-30T18:34:17.554Z",
+      "updatedAt": "2025-06-30T18:34:17.554Z",
+      "id": "2XGZwx21mujhR4wt",
+      "name": "air-quality-enhanced"
+    },
+    {
+      "createdAt": "2025-06-30T18:34:17.493Z",
+      "updatedAt": "2025-06-30T18:34:17.493Z",
+      "id": "8fvkCAeQZvgIKLSy",
+      "name": "production-ready"
+    },
+    {
+      "createdAt": "2025-06-30T18:34:17.433Z",
+      "updatedAt": "2025-06-30T18:34:17.433Z",
+      "id": "GY82Hpf9unRajQpn",
+      "name": "monitoring-system"
+    },
     {
       "createdAt": "2025-07-06T17:24:18.008Z",
       "updatedAt": "2025-07-06T17:24:18.008Z",
@@ -1249,10 +1233,22 @@
       "name": "Automated Analysis"
     },
     {
+      "createdAt": "2025-06-26T18:29:58.452Z",
+      "updatedAt": "2025-06-26T18:29:58.452Z",
+      "id": "eYFfb2lOgrQIn36O",
+      "name": "air-quality"
+    },
+    {
       "createdAt": "2025-07-06T17:24:18.024Z",
       "updatedAt": "2025-07-06T17:24:18.024Z",
       "id": "iq0uVFFyUdIJsenM",
       "name": "Multi-Source Integration"
+    },
+    {
+      "createdAt": "2025-06-30T18:54:02.650Z",
+      "updatedAt": "2025-06-30T18:54:02.650Z",
+      "id": "vw6WPpyCU1QQdG7j",
+      "name": "discord-notifications"
     }
   ]
 }

@@ -169,6 +169,8 @@ services:
       - postgres
     volumes:
       - ../data_cleaner/data:/app/data
+    networks:
+      - air_quality_network
 
 volumes:
   postgres_data:

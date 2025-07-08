@@ -5,6 +5,9 @@ from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from pathlib import Path
 import io
+import numpy as np
+from datetime import datetime
+from fastapi.responses import JSONResponse
 
 # Load env
 env_path = Path(__file__).parent.parent / "configs" / ".env"
@@ -70,6 +73,25 @@ def clean_climate_df(df: pd.DataFrame) -> pd.DataFrame:
         df = df[(df["temperature"] > -50) & (df["temperature"] < 60)]
     if "humidity" in df.columns:
         df = df[(df["humidity"] >= 0) & (df["humidity"] <= 100)]
+    # Thay thế giá trị null bằng giá trị mô phỏng
+    if "lat" in df.columns:
+        random_lat = np.random.uniform(8, 23, size=len(df))
+        df["lat"] = df["lat"].fillna(pd.Series(random_lat, index=df.index))
+    if "lon" in df.columns:
+        random_lon = np.random.uniform(102, 110, size=len(df))
+        df["lon"] = df["lon"].fillna(pd.Series(random_lon, index=df.index))
+    if "province" in df.columns:
+        df["province"] = df["province"].fillna("Unknown Province")
+    if "country" in df.columns:
+        df["country"] = df["country"].fillna("VN")
+    if "weather_condition" in df.columns:
+        df["weather_condition"] = df["weather_condition"].fillna("Clear")
+    if "weather_main" in df.columns:
+        df["weather_main"] = df["weather_main"].fillna("Clear")
+    if "weather_icon" in df.columns:
+        df["weather_icon"] = df["weather_icon"].fillna("01d")
+    if "timestamp" in df.columns:
+        df["timestamp"] = df["timestamp"].fillna(datetime.now())
     df = df.reset_index(drop=True)
     return df
 
@@ -86,34 +108,79 @@ def transform_climate_3nf(df: pd.DataFrame) -> dict:
         if col not in df.columns:
             df[col] = None
 
+    # Bảng Province
+    provinces = (
+        df[["province", "country"]].drop_duplicates().reset_index(drop=True).assign(province_id=lambda x: x.index + 1)
+        if all(c in df.columns for c in ["province", "country"])
+        else pd.DataFrame(columns=["province", "country", "province_id"])
+    )
+    province_map = provinces.set_index("province")["province_id"].to_dict() if "province" in provinces.columns else {}
+
+    # Bảng Country
+    countries = (
+        df[["country"]].drop_duplicates().reset_index(drop=True).assign(country_id=lambda x: x.index + 1)
+        if "country" in df.columns
+        else pd.DataFrame(columns=["country", "country_id"])
+    )
+    country_map = countries.set_index("country")["country_id"].to_dict() if "country" in countries.columns else {}
+
+    # Bảng WeatherMain
+    weather_mains = (
+        df[["weather_main"]].drop_duplicates().reset_index(drop=True).assign(main_id=lambda x: x.index + 1)
+        if "weather_main" in df.columns
+        else pd.DataFrame(columns=["weather_main", "main_id"])
+    )
+    main_map = weather_mains.set_index("weather_main")["main_id"].to_dict() if "weather_main" in weather_mains.columns else {}
+
+    # Bảng WeatherIcon
+    weather_icons = (
+        df[["weather_icon"]].drop_duplicates().reset_index(drop=True).assign(icon_id=lambda x: x.index + 1)
+        if "weather_icon" in df.columns
+        else pd.DataFrame(columns=["weather_icon", "icon_id"])
+    )
+    icon_map = weather_icons.set_index("weather_icon")["icon_id"].to_dict() if "weather_icon" in weather_icons.columns else {}
+
     # Location table
     locations = (
-        df[["location", "province", "lat", "lon", "country"]]
-        .drop_duplicates()
-        .reset_index(drop=True)
-        .assign(location_id=lambda x: x.index + 1)
+        df[["location", "province", "lat", "lon", "country"]].drop_duplicates().reset_index(drop=True).assign(location_id=lambda x: x.index + 1)
+        if all(c in df.columns for c in ["location", "province", "lat", "lon", "country"])
+        else pd.DataFrame(columns=["location", "province", "lat", "lon", "country", "location_id"])
     )
+    loc_map = locations.set_index(["location", "province"])["location_id"].to_dict() if all(c in locations.columns for c in ["location", "province", "location_id"]) else {}
+
     # WeatherCondition table
     weather_conditions = (
-        df[["weather_condition", "weather_main", "weather_icon"]]
-        .drop_duplicates()
-        .reset_index(drop=True)
-        .assign(condition_id=lambda x: x.index + 1)
+        df[["weather_condition", "weather_main", "weather_icon"]].drop_duplicates().reset_index(drop=True).assign(condition_id=lambda x: x.index + 1)
+        if all(c in df.columns for c in ["weather_condition", "weather_main", "weather_icon"])
+        else pd.DataFrame(columns=["weather_condition", "weather_main", "weather_icon", "condition_id"])
     )
-    # Mapping for foreign keys
-    loc_map = locations.set_index(["location", "province"])["location_id"].to_dict()
-    cond_map = weather_conditions.set_index(["weather_condition", "weather_main", "weather_icon"])["condition_id"].to_dict()
+    cond_map = (
+        weather_conditions.set_index(["weather_condition", "weather_main", "weather_icon"])["condition_id"].to_dict()
+        if all(c in weather_conditions.columns for c in ["weather_condition", "weather_main", "weather_icon", "condition_id"])
+        else {}
+    )
+
     # ClimateRecord table
     climate_records = df.copy()
-    climate_records["location_id"] = climate_records.apply(lambda x: loc_map.get((x["location"], x["province"])), axis=1)
-    climate_records["condition_id"] = climate_records.apply(
-        lambda x: cond_map.get((x.get("weather_condition"), x.get("weather_main"), x.get("weather_icon"))), axis=1
-    )
-    # Chọn các trường cần thiết cho ClimateRecord
+    if loc_map:
+        climate_records["location_id"] = climate_records.apply(lambda x: loc_map.get((x.get("location"), x.get("province"))), axis=1)
+    if province_map:
+        climate_records["province_id"] = climate_records["province"].map(province_map) if "province" in climate_records.columns else None
+    if country_map:
+        climate_records["country_id"] = climate_records["country"].map(country_map) if "country" in climate_records.columns else None
+    if main_map:
+        climate_records["main_id"] = climate_records["weather_main"].map(main_map) if "weather_main" in climate_records.columns else None
+    if icon_map:
+        climate_records["icon_id"] = climate_records["weather_icon"].map(icon_map) if "weather_icon" in climate_records.columns else None
+    if cond_map:
+        climate_records["condition_id"] = climate_records.apply(
+            lambda x: cond_map.get((x.get("weather_condition"), x.get("weather_main"), x.get("weather_icon"))), axis=1
+        )
+
     climate_fields = [
-        "timestamp", "crawl_time", "location_id", "condition_id", "coord_string", "timezone",
-        "temperature", "feels_like", "temp_min", "temp_max", "humidity", "pressure", "dew_point",
-        "uvi", "rainfall", "wind_speed", "wind_deg", "wind_gust", "clouds", "visibility",
+        "timestamp", "crawl_time", "location_id", "province_id", "country_id", "main_id", "icon_id", "condition_id",
+        "coord_string", "timezone", "temperature", "feels_like", "temp_min", "temp_max", "humidity", "pressure",
+        "dew_point", "uvi", "rainfall", "wind_speed", "wind_deg", "wind_gust", "clouds", "visibility",
         "sunrise", "sunset", "source"
     ]
     # Thêm các trường còn thiếu với giá trị None
@@ -122,6 +189,10 @@ def transform_climate_3nf(df: pd.DataFrame) -> dict:
             climate_records[col] = None
     climate_records = climate_records[climate_fields]
     return {
+        "Province": provinces,
+        "Country": countries,
+        "WeatherMain": weather_mains,
+        "WeatherIcon": weather_icons,
         "Location": locations,
         "WeatherCondition": weather_conditions,
         "ClimateRecord": climate_records
@@ -139,8 +210,21 @@ async def clean_climate_data(request: Request):
             raise HTTPException(status_code=400, detail="csv_content is required")
         df = pd.read_csv(io.StringIO(csv_content))
         df_clean = clean_climate_df(df)
-        # Lưu vào bảng climate_data
-        df_clean.to_sql("climate_data", engine, if_exists="append", index=False)
+        # --- CHUẨN HÓA 3NF ---
+        tables = transform_climate_3nf(df_clean)
+        # Lưu từng bảng vào Postgres
+        tables["Province"].to_sql("climate_province", engine, if_exists="replace", index=False)
+        tables["Country"].to_sql("climate_country", engine, if_exists="replace", index=False)
+        tables["WeatherMain"].to_sql("climate_weather_main", engine, if_exists="replace", index=False)
+        tables["WeatherIcon"].to_sql("climate_weather_icon", engine, if_exists="replace", index=False)
+        tables["Location"].to_sql("climate_location", engine, if_exists="replace", index=False)
+        tables["WeatherCondition"].to_sql("climate_weather_condition", engine, if_exists="replace", index=False)
+        tables["ClimateRecord"].to_sql("climate_record", engine, if_exists="append", index=False)
+        # Lưu file clean vào thư mục chuẩn
+        cleaned_dir = Path(r"D:\Project_Dp-15\Air_Quality\data_cleaner\data\data_cleaned")
+        cleaned_dir.mkdir(parents=True, exist_ok=True)
+        cleaned_file = cleaned_dir / 'cleaned_climate_quality.csv'
+        df_clean.to_csv(cleaned_file, index=False, encoding='utf-8-sig')
         return {
             "success": True,
             "total_rows": len(df_clean),
@@ -166,10 +250,6 @@ async def upload_climate_csv(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/health")
-def health():
-    return {"status": "ok", "service": "climate_cleaner"}
-
 def main():
     """
     Quét tất cả file CSV trong thư mục raw, làm sạch, transform 3NF và đẩy dữ liệu vào Postgres.
@@ -191,6 +271,10 @@ def main():
             df_clean = clean_climate_df(df)
             tables = transform_climate_3nf(df_clean)
             # Lưu từng bảng vào Postgres
+            tables["Province"].to_sql("climate_province", engine, if_exists="replace", index=False)
+            tables["Country"].to_sql("climate_country", engine, if_exists="replace", index=False)
+            tables["WeatherMain"].to_sql("climate_weather_main", engine, if_exists="replace", index=False)
+            tables["WeatherIcon"].to_sql("climate_weather_icon", engine, if_exists="replace", index=False)
             tables["Location"].to_sql("climate_location", engine, if_exists="replace", index=False)
             tables["WeatherCondition"].to_sql("climate_weather_condition", engine, if_exists="replace", index=False)
             tables["ClimateRecord"].to_sql("climate_record", engine, if_exists="append", index=False)

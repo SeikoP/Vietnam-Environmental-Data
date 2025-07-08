@@ -575,18 +575,16 @@ class AirQualityCrawler:
         if docker_data_dir.exists():
             data_folder = docker_data_dir
         else:
-            current_dir = Path(__file__).parent
-            data_folder = current_dir / 'data'
-        data_folder.mkdir(exist_ok=True)
+            # --- SỬA: Lưu về thư mục local D:\Project_Dp-15\Air_Quality\data_storage\air\raw ---
+            data_folder = Path(r"D:\Project_Dp-15\Air_Quality\data_storage\air\raw")
+        data_folder.mkdir(parents=True, exist_ok=True)
         
         current_date = datetime.now()
-        date_folder = data_folder / 'data_export'
-        date_folder.mkdir(exist_ok=True)
-        
+        # --- SỬA: Không tạo subfolder data_export khi lưu local ---
         if filename is None:
             filename = f"air_quality_vietnam_{current_date.strftime('%Y%m%d_%H%M%S')}.csv"
         
-        file_path = date_folder / filename
+        file_path = data_folder / filename
         
         try:
             df = pd.DataFrame(data)
