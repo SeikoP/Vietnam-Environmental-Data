@@ -14,7 +14,7 @@ else:
     load_dotenv()
 
 DB_URL = os.getenv("DATABASE_URL") or \
-    "postgresql+psycopg2://postgres:0946932602a@localhost:5433/air_quality_db"
+    "postgresql+psycopg2://postgres:0946932602a@postgres:5432/air_quality_db"
 
 engine = create_engine(DB_URL)
 app = FastAPI(title="Climate Cleaner")
@@ -203,3 +203,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+router = app.router

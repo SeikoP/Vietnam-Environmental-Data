@@ -166,6 +166,8 @@ services:
     ports:
       - "8081:8081"
     restart: unless-stopped
+    volumes:
+      - ./data_storage/air/raw:/app/data_export
 
   water_crawler:
     build:
@@ -175,6 +177,8 @@ services:
     ports:
       - "8082:8082"
     restart: unless-stopped
+    volumes:
+      - ./data_storage/water/raw:/app/data_export
 
   soil_crawler:
     build:
@@ -184,6 +188,8 @@ services:
     ports:
       - "8083:8083"
     restart: unless-stopped
+    volumes:
+      - ./data_storage/soil/raw:/app/data_export
 
   climate_crawler:
     build:
@@ -193,6 +199,8 @@ services:
     ports:
       - "8084:8084"
     restart: unless-stopped
+    volumes:
+      - ./data_storage/climate/raw:/app/data_export
 
   air_cleaner:
     build:
@@ -202,6 +210,8 @@ services:
     ports:
       - "8091:8091"
     restart: unless-stopped
+    volumes:
+      - ./data_cleaner/data:/app/data
 
   water_cleaner:
     build:
@@ -211,6 +221,8 @@ services:
     ports:
       - "8092:8092"
     restart: unless-stopped
+    volumes:
+      - ./data_cleaner/data:/app/data
 
   soil_cleaner:
     build:
@@ -220,6 +232,8 @@ services:
     ports:
       - "8093:8093"
     restart: unless-stopped
+    volumes:
+      - ./data_cleaner/data:/app/data
 
   climate_cleaner:
     build:
@@ -229,6 +243,8 @@ services:
     ports:
       - "8094:8094"
     restart: unless-stopped
+    volumes:
+      - ./data_cleaner/data:/app/data
 
   api:
     build:
@@ -253,6 +269,11 @@ services:
 volumes:
   pgdata:
 ```
+
+**Lưu ý:**  
+- Mount các thư mục `data_storage/*/raw` từ host vào container `/app/data_export` để backup dữ liệu crawl.
+- Mount `data_cleaner/data` từ host vào `/app/data` để backup dữ liệu sạch và bảng transform từ cleaner.
+- Khi cần backup, chỉ cần copy các thư mục này trên máy host.
 
 ---
 

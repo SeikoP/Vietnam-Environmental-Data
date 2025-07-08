@@ -46,6 +46,8 @@ services:
     restart: unless-stopped
     networks:
       - air_quality_network
+    volumes:
+      - ../data_storage/air/raw:/app/data_export
 
   water_crawler:
     build:
@@ -57,6 +59,8 @@ services:
     restart: unless-stopped
     networks:
       - air_quality_network
+    volumes:
+      - ../data_storage/water/raw:/app/data_export
 
   soil_crawler:
     build:
@@ -68,6 +72,8 @@ services:
     restart: unless-stopped
     networks:
       - air_quality_network
+    volumes:
+      - ../data_storage/soil/raw:/app/data_export
 
   climate_crawler:
     build:
@@ -79,52 +85,54 @@ services:
     restart: unless-stopped
     networks:
       - air_quality_network
+    volumes:
+      - ../data_storage/climate/raw:/app/data_export
 
-  air_cleaner:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.cleaner
-    env_file: ../configs/.env
-    ports:
-      - "8091:8091"
-    restart: unless-stopped
-    networks:
-      - air_quality_network
-    depends_on:
-      - postgres
+  # air_cleaner:
+  #   build:
+  #     context: ..
+  #     dockerfile: docker/Dockerfile.cleaner
+  #   env_file: ../configs/.env
+  #   ports:
+  #     - "8091:8091"
+  #   restart: unless-stopped
+  #   networks:
+  #     - air_quality_network
+  #   depends_on:
+  #     - postgres
 
-  water_cleaner:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.cleaner
-    env_file: ../configs/.env
-    ports:
-      - "8092:8092"
-    restart: unless-stopped
-    networks:
-      - air_quality_network
+  # water_cleaner:
+  #   build:
+  #     context: ..
+  #     dockerfile: docker/Dockerfile.cleaner
+  #   env_file: ../configs/.env
+  #   ports:
+  #     - "8092:8092"
+  #   restart: unless-stopped
+  #   networks:
+  #     - air_quality_network
 
-  soil_cleaner:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.cleaner
-    env_file: ../configs/.env
-    ports:
-      - "18093:8093"   # Changed host port to 18093
-    restart: unless-stopped
-    networks:
-      - air_quality_network
+  # soil_cleaner:
+  #   build:
+  #     context: ..
+  #     dockerfile: docker/Dockerfile.cleaner
+  #   env_file: ../configs/.env
+  #   ports:
+  #     - "18093:8093"   # Changed host port to 18093
+  #   restart: unless-stopped
+  #   networks:
+  #     - air_quality_network
 
-  climate_cleaner:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.cleaner
-    env_file: ../configs/.env
-    ports:
-      - "8094:8094"
-    restart: unless-stopped
-    networks:
-      - air_quality_network
+  # climate_cleaner:
+  #   build:
+  #     context: ..
+  #     dockerfile: docker/Dockerfile.cleaner
+  #   env_file: ../configs/.env
+  #   ports:
+  #     - "8094:8094"
+  #   restart: unless-stopped
+  #   networks:
+  #     - air_quality_network
 
   n8n:
     image: n8nio/n8n
@@ -153,12 +161,14 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.cleaner
-    env_file: configs/.env
+    env_file: ../configs/.env
     ports:
       - "8090:8090"
     restart: unless-stopped
     depends_on:
       - postgres
+    volumes:
+      - ../data_cleaner/data:/app/data
 
 volumes:
   postgres_data:

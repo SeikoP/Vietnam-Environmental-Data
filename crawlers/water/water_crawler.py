@@ -88,24 +88,24 @@ def filter_locations_by_criteria(locations: List[Dict], criteria: Dict = None) -
     """
     if not criteria:
         return locations
-    
+
     filtered = locations.copy()
-    
+
     if "provinces" in criteria:
         provinces = criteria["provinces"]
         filtered = [loc for loc in filtered if loc.get("province") in provinces]
-    
+
     if "names" in criteria:
         names = criteria["names"]
         filtered = [loc for loc in filtered if loc.get("name") in names]
-    
+
     if "has_river" in criteria and criteria["has_river"]:
         filtered = [loc for loc in filtered if loc.get("major_river")]
-    
+
     if "limit" in criteria:
         limit = criteria["limit"]
         filtered = filtered[:limit]
-    
+
     return filtered
 
 def get_vietnam_time(dt_utc):

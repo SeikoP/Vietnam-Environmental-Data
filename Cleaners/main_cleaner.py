@@ -1,8 +1,8 @@
 from fastapi import FastAPI
-from air_cleaner import router as air_router
-from water_cleaner import router as water_router
-from soil_cleaner import router as soil_router
-from climate_cleaner import router as climate_router
+from Cleaners.air_cleaner import router as air_router
+from Cleaners.water_cleaner import router as water_router
+from Cleaners.soil_cleaner import router as soil_router
+from Cleaners.climate_cleaner import router as climate_router
 
 app = FastAPI(title="Unified Cleaner Service")
 

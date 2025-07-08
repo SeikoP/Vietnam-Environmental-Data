@@ -493,3 +493,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+router = app.router
