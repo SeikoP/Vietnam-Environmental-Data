@@ -12,7 +12,6 @@ from urllib.parse import urljoin
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import sys
-import schedule
 from pathlib import Path
 from fastapi import FastAPI, Request
 import pytz
@@ -739,71 +738,6 @@ class AirQualityCrawler:
                 'success': False,
                 'error': 'No data was successfully crawled from any source'
             }
-ENABLE_SCHEDULING = True 
-def main():
-    """Hàm main với schedule và xử lý lỗi"""
-    def job():
-        try:
-            # Khởi tạo crawler
-            crawler = AirQualityCrawler()
-            
-            # Đọc API keys
-            iqair_api_key = None
-            openweather_api_key = os.getenv('OPENWEATHER_API_KEY') 
-            waqi_token = os.getenv('WAQI_TOKEN', 'demo')
-            
-            # Log thông tin API keys
-            logger.info("Starting scheduled crawl...")
-            logger.info("API Keys Status:")
-            logger.info(f"  IQAir API: {'✓ Available' if iqair_api_key else '✗ Not provided'}")
-            logger.info(f"  OpenWeatherMap API: {'✓ Available' if openweather_api_key else '✗ Not provided'}")
-            logger.info(f"  WAQI Token: {'✓ Custom token' if waqi_token != 'demo' else '✗ Using demo token'}")
-            
-            # Chạy crawl
-            result = crawler.run_optimized_crawl(iqair_api_key, openweather_api_key, waqi_token)
-            
-            # Log kết quả
-            if result and result.get('success'):
-                logger.info(f"Scheduled crawl completed successfully")
-                logger.info(f"Records collected: {result['total_records']}")
-                logger.info(f"Cities covered: {result['cities_covered']}")
-                logger.info(f"Data saved to: {result['csv_file']}")
-            else:
-                logger.error("Scheduled crawl failed")
-                if result:
-                    logger.error(f"Error: {result.get('error', 'Unknown error')}")
-                    
-        except Exception as e:
-            logger.error(f"Error in scheduled job: {str(e)}")
-
-    try:
-        # Load environment variables
-        try:
-            from dotenv import load_dotenv
-            load_dotenv()
-            logger.info("Environment variables loaded from .env file")
-        except ImportError:
-            logger.info("python-dotenv not installed, reading environment variables directly")
-        if ENABLE_SCHEDULING:
-            # Schedule job để chạy mỗi giờ
-            schedule.every().hour.at(":00").do(job)
-            
-            # Chạy job ngay lập tức lần đầu
-            logger.info("Running first crawl...")
-            job()
-            
-            # Keep the script running
-            logger.info("Starting scheduler, waiting for next run...")
-            while True:
-                schedule.run_pending()
-                time.sleep(60)  # Check every minute
-            
-    except KeyboardInterrupt:
-        logger.info("Crawler stopped by user")
-        print("\n⚠️  Crawler stopped by user")
-    except Exception as e:
-        logger.error(f"Unexpected error in main: {str(e)}")
-        print(f"\n💥 Unexpected error: {str(e)}")
 
 def simple_run():
     from dotenv import load_dotenv

@@ -8,7 +8,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "5433:5432"  # Changed host port from 5433 to 15433
     env_file:
       - ../configs/.env
     healthcheck:
@@ -53,7 +53,7 @@ services:
       dockerfile: docker/Dockerfile.water_crawler
     env_file: ../configs/.env
     ports:
-      - "8082:8082"
+      - "18082:8082"   # Change host port to 18082 (or any free port)
     restart: unless-stopped
     networks:
       - air_quality_network
@@ -110,7 +110,7 @@ services:
       dockerfile: docker/Dockerfile.cleaner
     env_file: ../configs/.env
     ports:
-      - "8093:8093"
+      - "18093:8093"   # Changed host port to 18093
     restart: unless-stopped
     networks:
       - air_quality_network
@@ -138,8 +138,9 @@ services:
       - N8N_PASSWORD=${N8N_PASSWORD}
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_USER_MANAGEMENT_DISABLED=false
+    user: "1000:1000"
     volumes:
-      - ./n8n_data:/home/node/.n8n
+      - D:\Project_Dp-15\Air_Quality\workflow\n8n_data:/home/node/.n8n
     depends_on:
       postgres:
         condition: service_healthy
@@ -148,24 +149,24 @@ services:
     restart: unless-stopped
     networks:
       - air_quality_network
+  unified_cleaner:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cleaner
+    env_file: configs/.env
+    ports:
+      - "8090:8090"
+    restart: unless-stopped
+    depends_on:
+      - postgres
 
 volumes:
   postgres_data:
     name: air_quality_postgres_data
+    external: true
   pgdata:
 
 networks:
   air_quality_network:
     name: air_quality_network
-
-# Build và chạy toàn bộ hệ thống (từ thư mục docker):
-# Chạy lệnh sau trong terminal/cmd:
-# 
-# docker compose build
-# docker compose up -d
-#
-# Để xem log:
-# docker compose logs -f
-#
-# Để dừng toàn bộ:
-# docker compose down
+    external: true

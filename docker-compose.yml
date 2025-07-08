@@ -1,0 +1,11 @@
+services:
+  unified_cleaner:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.cleaner
+    env_file: configs/.env
+    ports:
+      - "8090:8090"
+    restart: unless-stopped
+    depends_on:
+      - db

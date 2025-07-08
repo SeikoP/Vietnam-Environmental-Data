@@ -9,7 +9,6 @@ from sqlalchemy import create_engine
 import dotenv
 from typing import Dict
 from time import sleep
-import fastapi
 from fastapi import FastAPI, Request
 
 # Setup logging
@@ -47,8 +46,12 @@ for folder in [CLEANED_DIR,TRANFORM_DIR]:
 
 TOKEN_FILE = BASE_DIR / 'clean' / 'token_drive.pkl'
 CREDENTIALS_FILE = 'credentials_oauth.json'
-DATABASE_URL = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL') or 'postgresql+psycopg2://username:password@host:port/database_name'
-SCOPES = ['https://www.googleapis.com/auth/drive.file']
+DATABASE_URL = (
+    os.getenv('DATABASE_URL')
+    or os.getenv('POSTGRES_URL')
+    # fallback: only use a valid default, not a template!
+    or 'postgresql+psycopg2://postgres:0946932602a@postgres:5432/air_quality_db'
+)
 
 # Initialize SQLAlchemy engine
 engine = create_engine(DATABASE_URL)
@@ -57,7 +60,7 @@ engine = create_engine(DATABASE_URL)
 app = FastAPI()
 
 @app.post("/air_cleaner")
-async def main(request: Request):
+async def air_cleaner_api(request: Request):
     """
     Nhận body JSON hợp lệ từ n8n hoặc client khác, trả về lỗi nếu không phải JSON.
     """
@@ -197,8 +200,12 @@ for folder in [CLEANED_DIR,TRANFORM_DIR]:
 
 TOKEN_FILE = BASE_DIR / 'clean' / 'token_drive.pkl'
 CREDENTIALS_FILE = 'credentials_oauth.json'
-DATABASE_URL = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL') or 'postgresql+psycopg2://username:password@host:port/database_name'
-SCOPES = ['https://www.googleapis.com/auth/drive.file']
+DATABASE_URL = (
+    os.getenv('DATABASE_URL')
+    or os.getenv('POSTGRES_URL')
+    # fallback: only use a valid default, not a template!
+    or 'postgresql+psycopg2://postgres:0946932602a@postgres:5432/air_quality_db'
+)
 
 # Initialize SQLAlchemy engine
 engine = create_engine(DATABASE_URL)
@@ -433,56 +440,16 @@ def health_check():
     return {"status": "ok", "service": "data_cleaner"}
 
 def main():
-    """Main function to orchestrate the data processing pipeline."""
-    try:
-        setup_directories()
-        # Load tất cả file CSV trong thư mục data_export
-        data_export_dir = Path(r"D:\Project_Dp-15\Air_Quality\data_crawler\data_export")
-        csv_files = list(data_export_dir.glob("*.csv"))
-        if not csv_files:
-            logger.error(f"Không tìm thấy file CSV nào trong {data_export_dir}")
-            return
-        df = pd.concat([pd.read_csv(f) for f in csv_files], ignore_index=True)
-        logger.info(f"Loaded {len(df)} records from {len(csv_files)} files in {data_export_dir}")
-        df = clean_data(df)
-        mapping = transform_data(df)
-        save_to_csv(df, mapping)
-
-        # Kiểm tra kết nối DB trước khi ghi vào DB
-        db_connected = True
-        try:
-            with engine.connect() as conn:
-                from sqlalchemy import text
-                conn.execute(text("SELECT 1"))
-            logger.info("Database connection test: SUCCESS")
-        except Exception as db_test_err:
-            logger.error(f"Database connection test: FAILED - {db_test_err}")
-            db_connected = False
-
-        if db_connected:
-            for table in ['City', 'Source', 'WeatherCondition', 'AirQualityRecord']:
-                if table in mapping:
-                    try:
-                        save_to_postgres(mapping[table], table, engine, if_exists='replace')
-                    except Exception as e:
-                        logger.error(f"Error saving to PostgreSQL table {table}: {e}")
-        else:
-            logger.warning("Skip saving to PostgreSQL because database is not available.")
-
-        logger.info("Data processing pipeline completed successfully")
-    except Exception as e:
-        logger.error(f"Pipeline failed: {e}")
-        raise
-
-def load_all_csv_to_postgres():
-    # Đường dẫn thư mục chứa các file CSV
-    data_export_dir = Path(r"D:\Project_Dp-15\Air_Quality\data_crawler\data_export")
+    """
+    Quét tất cả file CSV trong thư mục data_storage/air/raw, làm sạch, transform, và đẩy lên Postgres.
+    """
+    data_export_dir = Path(r"D:\Project_Dp-15\Air_Quality\data_storage\air\raw")
     csv_files = list(data_export_dir.glob("*.csv"))
     if not csv_files:
-        print(f"Không tìm thấy file CSV nào trong {data_export_dir}")
+        logger.error(f"Không tìm thấy file CSV nào trong {data_export_dir}")
         return
     df = pd.concat([pd.read_csv(f) for f in csv_files], ignore_index=True)
-    print(f"Loaded {len(df)} records from {len(csv_files)} files in {data_export_dir}")
+    logger.info(f"Loaded {len(df)} records from {len(csv_files)} files in {data_export_dir}")
     df = clean_data(df)
     mapping = transform_data(df)
 
@@ -493,33 +460,22 @@ def load_all_csv_to_postgres():
     TRANFORM_DIR.mkdir(parents=True, exist_ok=True)
     cleaned_file = CLEANED_DIR / 'cleaned_air_quality.csv'
     df.to_csv(cleaned_file, index=False, encoding='utf-8-sig')
-    print(f"Saved cleaned data to {cleaned_file}")
+    logger.info(f"Saved cleaned data to {cleaned_file}")
     for table_name, table_data in mapping.items():
         table_path = TRANFORM_DIR / f"{table_name}.csv"
         table_data.to_csv(table_path, index=False, encoding='utf-8-sig')
-        print(f"Saved {table_name} to {table_path}")
+        logger.info(f"Saved {table_name} to {table_path}")
 
-    db_url ="postgresql+psycopg2://postgres:0946932602a@localhost:5433/air_quality_db"
-    engine = create_engine(db_url, pool_pre_ping=True, pool_recycle=1800)
+    # Kiểm tra kết nối DB trước khi ghi vào DB
     try:
         with engine.connect() as conn:
             from sqlalchemy import text
             conn.execute(text("SELECT 1"))
-        print("Database connection test: SUCCESS")
+        logger.info("Database connection test: SUCCESS")
     except Exception as db_test_err:
-        print(f"Database connection test: FAILED - {db_test_err}")
-        # Nếu mất kết nối, thử tạo lại engine và kết nối lại một lần nữa
-        try:
-            print("Trying to re-establish database connection...")
-            engine.dispose()
-            engine = create_engine(db_url, pool_pre_ping=True, pool_recycle=1800)
-            with engine.connect() as conn:
-                from sqlalchemy import text
-                conn.execute(text("SELECT 1"))
-            print("Reconnected to database successfully.")
-        except Exception as retry_err:
-            print(f"Retry failed: {retry_err}")
-            return
+        logger.error(f"Database connection test: FAILED - {db_test_err}")
+        return
+
     # Ghi lần lượt các bảng
     for table in ['City', 'Source', 'WeatherCondition', 'AirQualityRecord']:
         if table in mapping:
@@ -530,13 +486,10 @@ def load_all_csv_to_postgres():
                         from sqlalchemy import text
                         conn.execute(text('DROP TABLE IF EXISTS "AirQualityRecord" CASCADE;'))
                 save_to_postgres(mapping[table], table, engine, if_exists='replace')
+                logger.info(f"Saved {table} to PostgreSQL")
             except Exception as e:
-                print(f"Error saving to PostgreSQL table {table}: {e}")
-    print("Đã load dữ liệu sạch vào PostgreSQL thành công.")
-
-    # Đóng engine sau khi ghi xong để giải phóng kết nối
-    engine.dispose()
+                logger.error(f"Error saving to PostgreSQL table {table}: {e}")
+    logger.info("Đã load dữ liệu sạch vào PostgreSQL thành công.")
 
 if __name__ == '__main__':
-    # main()
-    load_all_csv_to_postgres()
+    main()

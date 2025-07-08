@@ -10,3 +10,4 @@ geopandas
 shapely
 jinja2
 statistics
+beautifulsoup4
