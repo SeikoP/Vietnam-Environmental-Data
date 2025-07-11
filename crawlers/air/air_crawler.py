@@ -54,6 +54,16 @@ async def run_crawl(request: Request):
         waqi_token
     )
     # Đảm bảo trả về JSON hợp lệ cho n8n
+    # Đảm bảo các trường cần thiết luôn có mặt cho cleaner
+    if isinstance(result, dict) and "csv_content" in result:
+        import pandas as pd
+        import io
+        df = pd.read_csv(io.StringIO(result["csv_content"]))
+        # Bổ sung các trường cần thiết nếu thiếu
+        for col in ["location", "province", "lat", "lon", "timestamp", "success", "error_code", "error_message"]:
+            if col not in df.columns:
+                df[col] = None
+        result["csv_content"] = df.to_csv(index=False, encoding='utf-8-sig')
     return result
 
 
@@ -307,11 +317,11 @@ class AirQualityCrawler:
         return data
 
     def crawl_waqi_data(self, token: str = 'demo') -> List[Dict]:
-        """Crawl WAQI với cải thiện và xử lý lỗi tốt hơn"""
+        """Crawl WAQI với cải thiện và xử lý lỗi tốt hơn, tối ưu đa luồng"""
         logger.info("Starting WAQI data crawling...")
         data = []
         cities = self.get_vietnam_cities()
-        
+
         def get_city_data(city: Dict) -> Optional[Dict]:
             """Get WAQI data for a city using multiple methods"""
             try:
@@ -426,35 +436,31 @@ class AirQualityCrawler:
                 logger.debug(f"{FAIL_MARK} Error crawling WAQI data for {city['name']}: {str(e)}")
                 return None
 
-        # Crawl từng thành phố với retry logic
-        for city in cities:
-            max_retries = 3
-            for attempt in range(max_retries):
+        # Tối ưu: dùng ThreadPoolExecutor để crawl song song nhiều thành phố
+        max_workers = min(10, len(cities))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_city = {executor.submit(get_city_data, city): city for city in cities}
+            for future in as_completed(future_to_city):
                 try:
-                    result = get_city_data(city)
+                    result = future.result(timeout=30)
                     if result:
                         data.append(result)
-                        break
-                    elif attempt < max_retries - 1:
-                        time.sleep(2)
                 except Exception as e:
-                    if attempt == max_retries - 1:
-                        logger.debug(f"Failed all retries for {city['name']}: {str(e)}")
-                    time.sleep(2)
-        
+                    logger.debug(f"Thread execution error: {str(e)}")
+                    continue
+
         logger.info(f"WAQI crawling completed. Retrieved {len(data)} records")
         return data
 
     def crawl_openweather_data(self, api_key: str) -> List[Dict]:
-        """Crawl OpenWeatherMap với cải thiện xử lý lỗi"""
+        """Crawl OpenWeatherMap với cải thiện xử lý lỗi, tối ưu đa luồng"""
         if not api_key:
             logger.warning("OpenWeatherMap API key not provided, skipping OpenWeatherMap crawling")
             return []
-            
         logger.info("Starting OpenWeatherMap data crawling...")
         data = []
         cities = self.get_vietnam_cities()
-        
+
         def crawl_city_openweather(city):
             try:
                 air_url = "http://api.openweathermap.org/data/2.5/air_pollution"
@@ -542,17 +548,19 @@ class AirQualityCrawler:
                 logger.error(f"Error crawling OpenWeatherMap for {city['name']}: {str(e)}")
                 return None
         
-        # Crawl từng thành phố
-        for city in cities:
-            try:
-                result = crawl_city_openweather(city)
-                if result:
-                    data.append(result)
-                time.sleep(1)  # Rate limiting
-            except Exception as e:
-                logger.debug(f"Failed to crawl OpenWeatherMap for {city['name']}: {str(e)}")
-                continue
-        
+        # Tối ưu: dùng ThreadPoolExecutor để crawl song song nhiều thành phố
+        max_workers = min(10, len(cities))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_city = {executor.submit(crawl_city_openweather, city): city for city in cities}
+            for future in as_completed(future_to_city):
+                try:
+                    result = future.result(timeout=30)
+                    if result:
+                        data.append(result)
+                except Exception as e:
+                    logger.debug(f"Thread execution error: {str(e)}")
+                    continue
+
         logger.info(f"OpenWeatherMap crawling completed. Retrieved {len(data)} records")
         return data
 

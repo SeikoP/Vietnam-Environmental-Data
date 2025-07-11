@@ -54,31 +54,28 @@ cache_dir = Path(r"D:\Project_Dp-15\Air_Quality\data_storage\soil\cache")
 cache_dir.mkdir(parents=True, exist_ok=True)
 
 def load_locations_from_json() -> List[Dict[str, Any]]:
-    """Load list of locations from JSON file with priority order."""
+    """Load list of locations from JSON file with priority order, fallback to default."""
     possible_paths = [
         config_dir / "locations.json",
         config_dir / "locations_vietnam.json",
         Path(__file__).parent / "locations.json",
         Path(__file__).parent / "config" / "locations.json"
     ]
-    
     for json_path in possible_paths:
         if json_path.exists():
             try:
                 with open(json_path, 'r', encoding='utf-8') as f:
                     locations = json.load(f)
-                    if isinstance(locations, list) and len(locations) > 0:
+                    if isinstance(locations, list) and locations:
                         logger.info(f"✅ Loaded {len(locations)} locations from: {json_path}")
                         return locations
             except Exception as ex:
                 logger.error(f"❌ Error reading {json_path}: {ex}")
-                continue
-    
     logger.warning("⚠️ No JSON file found, using default Vietnam locations...")
     return get_default_vietnam_locations()
 
 def get_default_vietnam_locations() -> List[Dict[str, Any]]:
-    """Return default Vietnam locations for testing."""
+    """Return a concise list of major Vietnam locations for fallback/testing."""
     return [
             # Thành phố trực thuộc trung ương
             {'name': 'Ho Chi Minh City', 'alt_names': ['Saigon', 'HCMC', 'Ho-Chi-Minh-City', 'Thanh pho Ho Chi Minh'], 'province': 'Ho Chi Minh', 'lat': 10.8231, 'lon': 106.6297},
@@ -784,7 +781,8 @@ async def run_enhanced_soil_crawl(request: Request):
         logger.info(f"🌱 Enhanced crawling for {len(locations)} locations")
         world_bank_data = get_world_bank_climate_data()
         collected_data = []
-        max_workers = min(8, len(locations))
+        max_workers = min(16, len(locations))  # Tăng số worker lên 16 (hoặc tối đa số lượng location)
+        # Giảm delay giữa các request, chỉ sleep khi thực sự cần thiết (ví dụ khi bị rate limit)
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_loc = {
                 executor.submit(crawl_soil_location, loc, world_bank_data): loc
@@ -808,7 +806,9 @@ async def run_enhanced_soil_crawl(request: Request):
                         "success": False,
                         "error_message": str(ex)
                     })
-                time.sleep(1 if len(locations) > 60 else 0.05)
+                # Tối ưu: Không sleep khi số lượng location nhỏ, chỉ sleep nhẹ nếu quá nhiều location
+                if len(locations) > 100:
+                    time.sleep(0.01)
         if not collected_data:
             raise HTTPException(status_code=404, detail="No data collected")
         df = pd.DataFrame(collected_data)

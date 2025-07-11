@@ -88,64 +88,10 @@ services:
     volumes:
       - ../data_storage/climate/raw:/app/data_export
 
-  # air_cleaner:
-  #   build:
-  #     context: ..
-  #     dockerfile: docker/Dockerfile.cleaner
-  #   env_file: ../configs/.env
-  #   ports:
-  #     - "8091:8091"
-  #   restart: unless-stopped
-  #   networks:
-  #     - air_quality_network
-  #   depends_on:
-  #     - postgres
-
-  # water_cleaner:
-  #   build:
-  #     context: ..
-  #     dockerfile: docker/Dockerfile.cleaner
-  #   env_file: ../configs/.env
-  #   ports:
-  #     - "8092:8092"
-  #   restart: unless-stopped
-  #   networks:
-  #     - air_quality_network
-
-  # soil_cleaner:
-  #   build:
-  #     context: ..
-  #     dockerfile: docker/Dockerfile.cleaner
-  #   env_file: ../configs/.env
-  #   ports:
-  #     - "18093:8093"   # Changed host port to 18093
-  #   restart: unless-stopped
-  #   networks:
-  #     - air_quality_network
-
-  # climate_cleaner:
-  #   build:
-  #     context: ..
-  #     dockerfile: docker/Dockerfile.cleaner
-  #   env_file: ../configs/.env
-  #   ports:
-  #     - "8094:8094"
-  #   restart: unless-stopped
-  #   networks:
-  #     - air_quality_network
-
   n8n:
     image: n8nio/n8n
     ports:
       - "5678:5678"
-    environment:
-      - N8N_HOST=${N8N_HOST}
-      - N8N_PORT=${N8N_PORT}
-      - N8N_PROTOCOL=http
-      - N8N_EMAIL=${N8N_EMAIL}
-      - N8N_PASSWORD=${N8N_PASSWORD}
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_USER_MANAGEMENT_DISABLED=false
     user: "1000:1000"
     volumes:
       - D:\Project_Dp-15\Air_Quality\workflow\n8n_data:/home/node/.n8n
@@ -157,6 +103,16 @@ services:
     restart: unless-stopped
     networks:
       - air_quality_network
+    environment:
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=${N8N_PORT}
+      - N8N_PROTOCOL=http
+      - N8N_EMAIL=${N8N_EMAIL}
+      - N8N_PASSWORD=${N8N_PASSWORD}
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_USER_MANAGEMENT_DISABLED=false
+      - N8N_CUSTOM_EXTENSIONS=@n8n/n8n-nodes-langchain
+
   unified_cleaner:
     build:
       context: ..
@@ -182,3 +138,14 @@ networks:
   air_quality_network:
     name: air_quality_network
     external: true
+
+# Để build lại image n8n (và các service custom build khác), sử dụng lệnh:
+# docker compose up --build n8n
+
+# Nếu muốn build và chạy toàn bộ hệ thống:
+# docker compose up --build
+
+# Nếu chỉ muốn build lại image n8n mà không chạy:
+# docker compose build n8n
+# Nếu chỉ muốn build lại image n8n mà không chạy:
+# docker compose build n8n

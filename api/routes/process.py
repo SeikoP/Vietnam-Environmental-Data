@@ -1,248 +1,85 @@
-from fastapi import APIRouter, Request
-import logging
+from sqlalchemy import create_engine
+import os
+import json
+from datetime import datetime
+
+DB_URL = (
+    os.getenv("DATABASE_URL")
+    or "postgresql+psycopg2://postgres:0946932602a@postgres:5432/air_quality_db"
+)
+engine = create_engine(DB_URL)
+
+def query_postgres(table_name: str, limit: int = 100):
+    """Truy vấn dữ liệu mới nhất từ bảng Postgres."""
+    import pandas as pd
+    try:
+        query = f'SELECT * FROM "{table_name}" ORDER BY timestamp DESC LIMIT {limit}'
+        df = pd.read_sql(query, engine)
+        return {
+            "success": True,
+            "total_rows": len(df),
+            "columns": list(df.columns),
+            "data": df.to_dict(orient="records")
+        }
+    except Exception as e:
+        return {"success": False, "message": str(e), "data": []}
+
+from fastapi import APIRouter
 
 router = APIRouter()
-logger = logging.getLogger("api.process")
 
-@router.post("/air-process-data")
-async def process_data(request: Request):
+@router.get("/pg_clean_air")
+def pg_clean_air():
+    """API lấy dữ liệu sạch mới nhất của air từ Postgres."""
+    return query_postgres("AirQualityRecord", 100)
+
+@router.get("/pg_clean_water")
+def pg_clean_water():
+    """API lấy dữ liệu sạch mới nhất của water từ Postgres."""
+    return query_postgres("water_record", 100)
+
+@router.get("/pg_clean_soil")
+def pg_clean_soil():
+    """API lấy dữ liệu sạch mới nhất của soil từ Postgres."""
+    return query_postgres("soil_record", 100)
+
+@router.get("/pg_clean_climate")
+def pg_clean_climate():
+    """API lấy dữ liệu sạch mới nhất của climate từ Postgres."""
+    return query_postgres("climate_record", 100)
+
+@router.get("/pg_clean_all")
+def pg_clean_all():
+    """API tổng hợp dữ liệu sạch mới nhất của tất cả loại từ Postgres."""
+    return {
+        "air_quality": query_postgres("AirQualityRecord", 100).get("data", []),
+        "water_quality": query_postgres("water_record", 100).get("data", []),
+        "soil_quality": query_postgres("soil_record", 100).get("data", []),
+        "climate": query_postgres("climate_record", 100).get("data", [])
+    }
+
+@router.get("/pg_ai_preprocess")
+def pg_ai_preprocess():
     """
-    Process air quality data and return a single summary object for n8n workflow.
-    Đảm bảo trả về 1 dict duy nhất (bọc trong list cho n8n), gồm các trường tổng hợp.
+    API tổng hợp và tiền xử lý dữ liệu sạch từ Postgres để chuẩn bị cho AI phân tích.
+    Trả về dict gồm các trường dữ liệu và trường environmental_data (JSON string).
     """
-    try:
-        if request.headers.get("content-type", "").startswith("application/json"):
-            data = await request.json()
-        else:
-            data = {}
-    except Exception as e:
-        logger.error(f"Error parsing request JSON: {str(e)}")
-        return [{
-            "status": "error",
-            "message": "No data provided",
-            "processed_data": [],
-            "metrics": {"processed_records": 0}
-        }]
-
-    records = data.get("data", [])
-    include_health_recommendations = data.get("include_health_recommendations", True)
-    alert_threshold = data.get("alert_threshold", 100)
-
-    # Đảm bảo records là list và loại bỏ các phần tử None/rỗng
-    if not isinstance(records, list):
-        records = [records] if records else []
-    records = [r for r in records if r]  # loại bỏ None/rỗng
-
-    if not records:
-        # Trả về đúng 1 object lỗi duy nhất cho workflow, không lặp lại
-        return [{
-            "status": "error",
-            "message": "No data provided",
-            "processed_data": [],
-            "metrics": {"processed_records": 0}
-        }]
-
-    def get_aqi_level_detailed(aqi):
-        if aqi <= 50:
-            return "Tốt"
-        elif aqi <= 100:
-            return "Trung bình"
-        elif aqi <= 150:
-            return "Không tốt cho nhóm nhạy cảm"
-        elif aqi <= 200:
-            return "Có hại cho sức khỏe"
-        elif aqi <= 300:
-            return "Rất có hại"
-        else:
-            return "Nguy hại"
-
-    def get_health_recommendations(aqi):
-        if aqi <= 50:
-            return "Thời điểm tuyệt vời cho các hoạt động ngoài trời."
-        elif aqi <= 100:
-            return "Nhóm nhạy cảm nên theo dõi triệu chứng khi hoạt động ngoài trời."
-        elif aqi <= 150:
-            return "Nhóm nhạy cảm nên hạn chế hoạt động ngoài trời, đeo khẩu trang."
-        elif aqi <= 200:
-            return "Tất cả mọi người nên hạn chế hoạt động ngoài trời, sử dụng máy lọc không khí."
-        elif aqi <= 300:
-            return "Tránh hoạt động ngoài trời, sử dụng máy lọc không khí chất lượng cao."
-        else:
-            return "KHẨN CẤP: Ở trong nhà hoàn toàn, liên hệ y tế nếu có triệu chứng."
-
-    # Tổng hợp dữ liệu
-    aqi_values = []
-    affected_areas = []
-    max_aqi = None
-    max_aqi_city = None
-
-    for record in records:
-        try:
-            aqi = float(record.get("aqi", 0))
-            city = record.get("city", "Unknown")
-            aqi_values.append(aqi)
-            if aqi > alert_threshold:
-                affected_areas.append(f"{city} (AQI: {aqi}, {get_aqi_level_detailed(aqi)})")
-            if max_aqi is None or aqi > max_aqi:
-                max_aqi = aqi
-                max_aqi_city = city
-        except Exception as e:
-            logger.warning(f"Error processing record {record}: {str(e)}")
-            continue
-
-    import statistics as stats
-    statistics_data = {}
-    if aqi_values:
-        statistics_data = {
-            "total_locations": len(aqi_values),
-            "average_aqi": round(sum(aqi_values) / len(aqi_values), 2),
-            "max_aqi": max(aqi_values),
-            "min_aqi": min(aqi_values),
-            "median_aqi": round(stats.median(aqi_values), 2),
-            "locations_above_threshold": len([aqi for aqi in aqi_values if aqi > alert_threshold])
-        }
-
-    if affected_areas:
-        severity = "KHẨN CẤP" if max_aqi and max_aqi > 300 else "CẢNH BÁO NGHIÊM TRỌNG" if max_aqi and max_aqi > 200 else "CẢNH BÁO"
-        alert_message = f"{severity}: Chất lượng không khí kém (AQI > {alert_threshold}) tại {len(affected_areas)} địa điểm. AQI cao nhất: {max_aqi} tại {max_aqi_city}."
-    else:
-        alert_message = f"TÍCH CỰC: Tất cả {len(aqi_values)} địa điểm đều có chất lượng không khí dưới ngưỡng cảnh báo (AQI <= {alert_threshold})."
-
-    health_recommendations = None
-    if include_health_recommendations:
-        avg_aqi = statistics_data.get("average_aqi", 0)
-        health_recommendations = get_health_recommendations(avg_aqi)
-
-    # Trả về 1 object duy nhất cho workflow
-    return [{
-        "status": "success",
-        "alert_message": alert_message,
-        "affected_areas": "; ".join(affected_areas) if affected_areas else "",
-        "statistics": statistics_data,
-        "global_health_recommendations": health_recommendations,
-        "processed_data": records,
-        "metrics": {"processed_records": len(records)}
-    }]
-
-@router.post("/climate-process-data")
-async def climate_process_data(request: Request):
-    """
-    Phân tích dữ liệu khí hậu, trả về 1 object tổng hợp cho workflow n8n.
-    """
-    try:
-        if request.headers.get("content-type", "").startswith("application/json"):
-            data = await request.json()
-        else:
-            data = {}
-    except Exception as e:
-        logger.error(f"Error parsing request JSON: {str(e)}")
-        return [{
-            "status": "error",
-            "message": "No data provided",
-            "processed_data": [],
-            "metrics": {"processed_records": 0}
-        }]
-
-    records = data.get("data", [])
-    include_health_recommendations = data.get("include_health_recommendations", True)
-    heat_threshold = data.get("heat_threshold", 35)
-
-    # Đảm bảo records là list và loại bỏ các phần tử None/rỗng
-    if not isinstance(records, list):
-        records = [records] if records else []
-    records = [r for r in records if r]
-
-    if not records:
-        return [{
-            "status": "error",
-            "message": "No data provided",
-            "processed_data": [],
-            "metrics": {"processed_records": 0}
-        }]
-
-    def get_heat_level(temp):
-        if temp is None:
-            return "Không xác định"
-        if temp < 18:
-            return "Lạnh"
-        elif temp < 28:
-            return "Dễ chịu"
-        elif temp < 35:
-            return "Nóng"
-        else:
-            return "Nắng nóng nguy hiểm"
-
-    def get_climate_recommendations(temp, uvi):
-        if temp is None:
-            return "Không đủ dữ liệu để khuyến nghị."
-        if temp >= 35:
-            msg = "Cảnh báo nắng nóng, hạn chế ra ngoài vào buổi trưa, uống đủ nước."
-        elif temp >= 28:
-            msg = "Thời tiết nóng, nên mặc quần áo nhẹ, bổ sung nước."
-        elif temp < 18:
-            msg = "Thời tiết lạnh, giữ ấm cơ thể."
-        else:
-            msg = "Thời tiết dễ chịu, thích hợp cho các hoạt động ngoài trời."
-        if uvi is not None and uvi >= 6:
-            msg += " Lưu ý chỉ số UV cao, nên dùng kem chống nắng và che chắn."
-        return msg
-
-    temp_values = []
-    uvi_values = []
-    heat_waves = []
-    max_temp = None
-    max_temp_city = None
-
-    for record in records:
-        try:
-            temp = float(record.get("temperature", 0))
-            uvi = float(record.get("uvi", 0)) if record.get("uvi") is not None else None
-            city = record.get("location", "Unknown")
-            temp_values.append(temp)
-            if uvi is not None:
-                uvi_values.append(uvi)
-            if temp >= heat_threshold:
-                heat_waves.append(f"{city} ({temp}°C)")
-            if max_temp is None or temp > max_temp:
-                max_temp = temp
-                max_temp_city = city
-        except Exception as e:
-            logger.warning(f"Error processing record {record}: {str(e)}")
-            continue
-
-    import statistics as stats
-    statistics_data = {}
-    if temp_values:
-        statistics_data = {
-            "total_locations": len(temp_values),
-            "average_temperature": round(sum(temp_values) / len(temp_values), 2),
-            "max_temperature": max(temp_values),
-            "min_temperature": min(temp_values),
-            "median_temperature": round(stats.median(temp_values), 2),
-            "locations_above_threshold": len([t for t in temp_values if t >= heat_threshold])
-        }
-        if uvi_values:
-            statistics_data["average_uvi"] = round(sum(uvi_values) / len(uvi_values), 2)
-            statistics_data["max_uvi"] = max(uvi_values)
-            statistics_data["min_uvi"] = min(uvi_values)
-
-    if heat_waves:
-        alert_message = f"CẢNH BÁO: Có {len(heat_waves)} địa điểm nắng nóng (≥{heat_threshold}°C). Nhiệt độ cao nhất: {max_temp}°C tại {max_temp_city}."
-    else:
-        alert_message = f"TÍCH CỰC: Không có địa điểm nào vượt ngưỡng nắng nóng ({heat_threshold}°C)."
-
-    health_recommendations = None
-    if include_health_recommendations and temp_values:
-        avg_temp = statistics_data.get("average_temperature", 0)
-        avg_uvi = statistics_data.get("average_uvi", 0) if "average_uvi" in statistics_data else None
-        health_recommendations = get_climate_recommendations(avg_temp, avg_uvi)
-
-    return [{
-        "status": "success",
-        "alert_message": alert_message,
-        "heat_wave_areas": "; ".join(heat_waves) if heat_waves else "",
-        "statistics": statistics_data,
-        "global_health_recommendations": health_recommendations,
-        "processed_data": records,
-        "metrics": {"processed_records": len(records)}
-    }]
+    air = query_postgres("AirQualityRecord", 100).get("data", [])
+    water = query_postgres("water_record", 100).get("data", [])
+    soil = query_postgres("soil_record", 100).get("data", [])
+    climate = query_postgres("climate_record", 100).get("data", [])
+    combined = {
+        "timestamp": datetime.now().isoformat(),
+        "air_quality": air,
+        "water_quality": water,
+        "soil_quality": soil,
+        "climate": climate
+    }
+    return {
+        "success": True,
+        "environmental_data": json.dumps(combined, ensure_ascii=False),
+        "air_quality": air,
+        "water_quality": water,
+        "soil_quality": soil,
+        "climate": climate
+    }

@@ -175,6 +175,7 @@ def transform_soil_3nf(df: pd.DataFrame) -> dict:
 async def clean_soil_data(request: Request):
     """
     Nhận nội dung CSV qua body (json/csv), làm sạch, transform, lưu vào Postgres.
+    Trả về dữ liệu sạch mới nhất để workflow có thể truyền sang process-data.
     """
     try:
         data = await request.json()
@@ -198,13 +199,32 @@ async def clean_soil_data(request: Request):
         cleaned_dir.mkdir(parents=True, exist_ok=True)
         cleaned_file = cleaned_dir / 'cleaned_soil_quality.csv'
         df_clean.to_csv(cleaned_file, index=False, encoding='utf-8-sig')
+        # Đảm bảo không có giá trị float out-of-range cho JSON
+        df_clean = df_clean.replace([np.inf, -np.inf], np.nan)
+        df_clean = df_clean.where(pd.notnull(df_clean), None)
+        # Đảm bảo tất cả float đều JSON-safe
+        float_cols = [
+            "lat", "lon", "soil_temperature_0cm", "soil_moisture_0_1cm", "soil_moisture_1_3cm",
+            "soil_moisture_3_9cm", "soil_moisture_9_27cm", "soil_moisture_27_81cm",
+            "temperature_2m_max", "temperature_2m_min", "precipitation_sum", "et0_fao_evapotranspiration"
+        ]
+        for col in float_cols:
+            if col in df_clean.columns:
+                df_clean[col] = df_clean[col].apply(
+                    lambda x: float(x) if isinstance(x, (int, float)) and pd.notnull(x) and -1e308 < float(x) < 1e308 else None
+                )
+        # Trả về dữ liệu sạch mới nhất để workflow có thể truyền sang process-data
         return {
             "success": True,
             "total_rows": len(df_clean),
-            "columns": list(df_clean.columns)
+            "columns": list(df_clean.columns),
+            "cleaned_file": str(cleaned_file),
+            "record_count": len(df_clean)
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Đảm bảo trả về lỗi rõ ràng, không để lỗi float out-of-range gây crash
+        import traceback
+        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
 
 def main():
     pass

@@ -8,6 +8,11 @@ import io
 import numpy as np
 from datetime import datetime
 from fastapi.responses import JSONResponse
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load env
 env_path = Path(__file__).parent.parent / "configs" / ".env"
@@ -22,8 +27,45 @@ DB_URL = os.getenv("DATABASE_URL") or \
 engine = create_engine(DB_URL)
 app = FastAPI(title="Water Cleaner")
 
+def simulate_water_row(row):
+    """Sinh dữ liệu mô phỏng cho các trường null của một dòng."""
+    import random
+    lat = row.get("lat", random.uniform(8, 23))
+    lon = row.get("lon", random.uniform(102, 110))
+    region = row.get("region", "Unknown Region")
+    province = row.get("province", "Unknown Province")
+    major_river = row.get("major_river", "Unknown River")
+    return {
+        "lat": lat if pd.notnull(lat) else random.uniform(8, 23),
+        "lon": lon if pd.notnull(lon) else random.uniform(102, 110),
+        "annual_rainfall_mm": random.uniform(1500, 2500),
+        "groundwater_depth": random.uniform(2, 50),
+        "rainfall_24h": random.uniform(0, 80),
+        "rainfall_7d": random.uniform(0, 300),
+        "evaporation_rate": random.uniform(1, 10),
+        "water_quality_index": random.uniform(40, 90),
+        "estimated_bacterial_risk": random.uniform(0, 1),
+        "estimated_pollution_risk": random.uniform(0, 1),
+        "estimated_ph_risk": random.uniform(0, 1),
+        "estimated_water_quality_score": random.uniform(50, 95),
+        "region": region,
+        "province": province,
+        "major_river": major_river,
+        "water_quality_category": "good",
+        "water_source_type": "river_groundwater",
+        "water_treatment_plants": random.randint(2, 10),
+        "water_quality_monitoring": "regular",
+        "flood_risk": "medium",
+        "drought_risk": "low",
+        "water_stress_level": "medium",
+        "water_abundance": "high",
+        "source": "simulated"
+    }
+
 def clean_water_df(df: pd.DataFrame) -> pd.DataFrame:
-    """Làm sạch và chuẩn hóa dữ liệu nước."""
+    """Làm sạch và chuẩn hóa dữ liệu nước. Nếu null quá nhiều, thay thế bằng dữ liệu mô phỏng."""
+    logger.info("Starting water data cleaning process")
+    # Chuẩn hóa tên cột
     df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
     if "success" in df.columns:
         df = df[df["success"] == True]
@@ -40,9 +82,46 @@ def clean_water_df(df: pd.DataFrame) -> pd.DataFrame:
         "evaporation_rate", "water_quality_index", "estimated_bacterial_risk", "estimated_pollution_risk",
         "estimated_ph_risk", "estimated_water_quality_score"
     ]
+    # Define default values for float columns (similar to climate_cleaner.py)
+    float_defaults = {
+        "annual_rainfall_mm": 0.0,
+        "groundwater_depth": None,
+        "rainfall_24h": 0.0,
+        "rainfall_7d": 0.0,
+        "evaporation_rate": 0.0,
+        "water_quality_index": None,
+        "estimated_bacterial_risk": None,
+        "estimated_pollution_risk": None,
+        "estimated_ph_risk": None,
+        "estimated_water_quality_score": None
+    }
     for col in float_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
+            # Replace inf/-inf with NaN and clip to reasonable ranges
+            df[col] = df[col].replace([np.inf, -np.inf], np.nan)
+            if col in ["lat", "lon"]:  # Geographic coordinates
+                df[col] = df[col].clip(lower=-180, upper=180)
+            elif col in ["annual_rainfall_mm", "rainfall_24h", "rainfall_7d"]:  # Rainfall in mm
+                df[col] = df[col].clip(lower=0, upper=1e4)  # Max 10,000 mm
+            elif col == "groundwater_depth":  # Depth in meters
+                df[col] = df[col].clip(lower=0, upper=1e3)  # Max 1,000 m
+            elif col == "evaporation_rate":  # Rate in mm/day
+                df[col] = df[col].clip(lower=0, upper=100)  # Max 100 mm/day
+            elif col == "water_quality_index":  # Index typically 0-100
+                df[col] = df[col].clip(lower=0, upper=100)
+            elif col in ["estimated_bacterial_risk", "estimated_pollution_risk", "estimated_ph_risk"]:  # Risk scores 0-1
+                df[col] = df[col].clip(lower=0, upper=1)
+            elif col == "estimated_water_quality_score":  # Score 0-100
+                df[col] = df[col].clip(lower=0, upper=100)
+            # Fill NaN with default value
+            default = float_defaults.get(col, None)
+            if default is not None:
+                df[col] = df[col].fillna(default)
+            else:
+                df[col] = df[col].where(pd.notnull(df[col]), None)
+            # Ensure JSON-safe float values
+            df[col] = df[col].apply(lambda x: float(x) if pd.notnull(x) and -1e308 < float(x) < 1e308 else None)
     str_cols = [
         "location", "province", "region", "major_river", "water_availability", "water_source_type",
         "water_treatment_plants", "water_quality_monitoring", "flood_risk", "drought_risk",
@@ -52,20 +131,19 @@ def clean_water_df(df: pd.DataFrame) -> pd.DataFrame:
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip().replace("nan", None)
             df[col] = df[col].replace({"None": None, "": None})
+    # Handle datetime columns
     if "timestamp" in df.columns:
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
     if "crawl_time" in df.columns:
         df["crawl_time"] = pd.to_datetime(df["crawl_time"], errors="coerce")
     df = df[df["timestamp"].notnull()]
-    df = df.reset_index(drop=True)
     # Thay thế giá trị null bằng giá trị mô phỏng
     if "lat" in df.columns:
-        # Sửa lỗi: fillna phải truyền giá trị scalar, dict hoặc Series, không truyền ndarray trực tiếp
-        random_lat = np.random.uniform(8, 23, size=len(df))
-        df["lat"] = df["lat"].fillna(pd.Series(random_lat, index=df.index))
+        random_lat = pd.Series(np.random.uniform(8, 23, size=len(df)), index=df.index)
+        df["lat"] = df["lat"].fillna(random_lat)
     if "lon" in df.columns:
-        random_lon = np.random.uniform(102, 110, size=len(df))
-        df["lon"] = df["lon"].fillna(pd.Series(random_lon, index=df.index))
+        random_lon = pd.Series(np.random.uniform(102, 110, size=len(df)), index=df.index)
+        df["lon"] = df["lon"].fillna(random_lon)
     if "province" in df.columns:
         df["province"] = df["province"].fillna("Unknown Province")
     if "region" in df.columns:
@@ -78,12 +156,38 @@ def clean_water_df(df: pd.DataFrame) -> pd.DataFrame:
         df["timestamp"] = df["timestamp"].fillna(datetime.now())
     if "water_source_type" in df.columns:
         df["water_source_type"] = df["water_source_type"].fillna("Unknown Source")
+    df = df.reset_index(drop=True)
+    # Đếm tỷ lệ null trên các trường quan trọng
+    important_cols = ["lat", "lon", "annual_rainfall_mm", "rainfall_24h", "estimated_water_quality_score"]
+    important_cols_exist = [col for col in important_cols if col in df.columns]
+    if important_cols_exist:
+        null_counts = df[important_cols_exist].isnull().sum()
+        null_ratio = null_counts / len(df) if len(df) > 0 else 0
+        # Nếu bất kỳ trường quan trọng nào có tỷ lệ null > 0.3 (30%), thay thế bằng dữ liệu mô phỏng
+        if (null_ratio > 0.3).any():
+            logger.warning(f"Too many nulls detected in important columns: {null_counts.to_dict()}. Replacing with simulated data.")
+            for idx, row in df.iterrows():
+                for col in important_cols_exist:
+                    if pd.isnull(row[col]):
+                        sim = simulate_water_row(row)
+                        df.at[idx, col] = sim[col]
+                # Có thể bổ sung các trường khác nếu cần
+                for col in ["water_quality_category", "water_source_type", "region", "province", "major_river"]:
+                    if col in df.columns and pd.isnull(row[col]):
+                        sim = simulate_water_row(row)
+                        df.at[idx, col] = sim[col]
+    # Log any remaining NaN values in float columns
+    for col in float_cols:
+        if col in df.columns and df[col].isna().any():
+            logger.warning(f"Column {col} contains {df[col].isna().sum()} NaN values after cleaning")
+    logger.info("Water data cleaning completed")
     return df
 
 def transform_water_3nf(df: pd.DataFrame) -> dict:
     """
     Chuẩn hóa dữ liệu nước về dạng 3NF: Location, WaterSourceType, WaterRecord.
     """
+    logger.info("Starting 3NF transformation for water data")
     for col in ["lat", "lon"]:
         if col not in df.columns:
             df[col] = None
@@ -166,6 +270,7 @@ def transform_water_3nf(df: pd.DataFrame) -> dict:
         if col not in water_records.columns:
             water_records[col] = None
     water_records = water_records[water_fields]
+    logger.info("3NF transformation for water data completed")
     return {
         "Province": provinces,
         "Region": regions,
@@ -176,18 +281,63 @@ def transform_water_3nf(df: pd.DataFrame) -> dict:
         "WaterRecord": water_records
     }
 
+def fill_simulated_for_nan(df):
+    """Thay thế tất cả giá trị NaN của các trường float bằng giá trị mô phỏng hợp lý."""
+    import random
+    float_cols = [
+        "lat", "lon", "annual_rainfall_mm", "groundwater_depth", "rainfall_24h", "rainfall_7d",
+        "evaporation_rate", "water_quality_index", "estimated_bacterial_risk", "estimated_pollution_risk",
+        "estimated_ph_risk", "estimated_water_quality_score"
+    ]
+    for col in float_cols:
+        if col in df.columns:
+            nan_idx = df[df[col].isna()].index
+            if len(nan_idx) > 0:
+                # Sinh giá trị mô phỏng cho từng dòng
+                for idx in nan_idx:
+                    if col == "lat":
+                        df.at[idx, col] = random.uniform(8, 23)
+                    elif col == "lon":
+                        df.at[idx, col] = random.uniform(102, 110)
+                    elif col == "annual_rainfall_mm":
+                        df.at[idx, col] = random.uniform(1500, 2500)
+                    elif col == "groundwater_depth":
+                        df.at[idx, col] = random.uniform(2, 50)
+                    elif col == "rainfall_24h":
+                        df.at[idx, col] = random.uniform(0, 80)
+                    elif col == "rainfall_7d":
+                        df.at[idx, col] = random.uniform(0, 300)
+                    elif col == "evaporation_rate":
+                        df.at[idx, col] = random.uniform(1, 10)
+                    elif col == "water_quality_index":
+                        df.at[idx, col] = random.uniform(40, 90)
+                    elif col == "estimated_bacterial_risk":
+                        df.at[idx, col] = random.uniform(0, 1)
+                    elif col == "estimated_pollution_risk":
+                        df.at[idx, col] = random.uniform(0, 1)
+                    elif col == "estimated_ph_risk":
+                        df.at[idx, col] = random.uniform(0, 1)
+                    elif col == "estimated_water_quality_score":
+                        df.at[idx, col] = random.uniform(50, 95)
+    return df
+
 @app.post("/clean_water_data")
 async def clean_water_data(request: Request):
     """
     Nhận nội dung CSV qua body (json/csv), làm sạch, transform, lưu vào Postgres.
+    Trả về dữ liệu sạch mới nhất để workflow có thể truyền sang process-data.
     """
     try:
+        logger.info("Received request to /clean_water_data")
         data = await request.json()
         csv_content = data.get("csv_content")
         if not csv_content:
+            logger.error("csv_content is missing in request")
             raise HTTPException(status_code=400, detail="csv_content is required")
         df = pd.read_csv(io.StringIO(csv_content))
+        logger.info(f"Loaded CSV with {len(df)} rows")
         df_clean = clean_water_df(df)
+        logger.info(f"Cleaned DataFrame with {len(df_clean)} rows")
         # --- CHUẨN HÓA 3NF ---
         tables = transform_water_3nf(df_clean)
         # Lưu từng bảng vào Postgres
@@ -198,17 +348,54 @@ async def clean_water_data(request: Request):
         tables["Location"].to_sql("water_location", engine, if_exists="replace", index=False)
         tables["WaterSourceType"].to_sql("water_source_type", engine, if_exists="replace", index=False)
         tables["WaterRecord"].to_sql("water_record", engine, if_exists="append", index=False)
-        # Lưu file clean vào thư mục chuẩn (nếu muốn)
+        logger.info("Data saved to PostgreSQL")
+        # Lưu file clean vào thư mục chuẩn
         cleaned_dir = Path(r"D:\Project_Dp-15\Air_Quality\data_cleaner\data\data_cleaned")
         cleaned_dir.mkdir(parents=True, exist_ok=True)
         cleaned_file = cleaned_dir / 'cleaned_water_quality.csv'
         df_clean.to_csv(cleaned_file, index=False, encoding='utf-8-sig')
+        logger.info(f"Cleaned data saved to {cleaned_file}")
+        # Ensure JSON-serializable output
+        df_clean = df_clean.replace([np.inf, -np.inf], np.nan)
+        df_clean = fill_simulated_for_nan(df_clean)
+        df_clean = df_clean.where(pd.notnull(df_clean), None)
+        # Convert datetime columns to ISO format strings for JSON compatibility
+        for col in ["timestamp", "crawl_time"]:
+            if col in df_clean.columns:
+                df_clean[col] = df_clean[col].apply(lambda x: x.isoformat() if pd.notnull(x) and isinstance(x, (pd.Timestamp, datetime)) else None)
+        # Ensure all float columns are within safe JSON range
+        float_cols = [
+            "lat", "lon", "annual_rainfall_mm", "groundwater_depth", "rainfall_24h", "rainfall_7d",
+            "evaporation_rate", "water_quality_index", "estimated_bacterial_risk", "estimated_pollution_risk",
+            "estimated_ph_risk", "estimated_water_quality_score"
+        ]
+        for col in float_cols:
+            if col in df_clean.columns:
+                # Chuyển mọi giá trị không phải số hoặc ngoài khoảng thành None
+                df_clean[col] = df_clean[col].apply(
+                    lambda x: float(x) if isinstance(x, (int, float)) and pd.notnull(x) and -1e308 < float(x) < 1e308 else None
+                )
+        # Final check for JSON compatibility (chỉ log, không raise lỗi)
+        for col in df_clean.columns:
+            if col in float_cols:
+                # Chuyển mọi giá trị không phải số hoặc ngoài khoảng thành None (lặp lại để đảm bảo)
+                df_clean[col] = df_clean[col].apply(
+                    lambda x: float(x) if isinstance(x, (int, float)) and pd.notnull(x) and -1e308 < float(x) < 1e308 else None
+                )
+                invalid = df_clean[col][df_clean[col].notnull() & ~df_clean[col].apply(lambda x: isinstance(x, (int, float)) and -1e308 < float(x) < 1e308)]
+                if not invalid.empty:
+                    logger.error(f"Column {col} contains {len(invalid)} non-JSON compliant values: {invalid.tolist()}")
+                    df_clean.loc[invalid.index, col] = None
+        logger.info("Data prepared for JSON response")
         return {
             "success": True,
             "total_rows": len(df_clean),
-            "columns": list(df_clean.columns)
+            "columns": list(df_clean.columns),
+            "cleaned_file": str(cleaned_file),
+            "record_count": len(df_clean)
         }
     except Exception as e:
+        logger.error(f"Error in /clean_water_data: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/upload_water_csv")
@@ -217,8 +404,10 @@ async def upload_water_csv(file: UploadFile = File(...)):
     Tải lên file CSV qua form-data, làm sạch, transform, lưu vào Postgres.
     """
     try:
+        logger.info("Received request to /upload_water_csv")
         contents = await file.read()
         df = pd.read_csv(io.BytesIO(contents))
+        logger.info(f"Loaded CSV with {len(df)} rows")
         df_clean = clean_water_df(df)
         # --- CHUẨN HÓA 3NF ---
         tables = transform_water_3nf(df_clean)
@@ -230,24 +419,26 @@ async def upload_water_csv(file: UploadFile = File(...)):
         tables["Location"].to_sql("water_location", engine, if_exists="replace", index=False)
         tables["WaterSourceType"].to_sql("water_source_type", engine, if_exists="replace", index=False)
         tables["WaterRecord"].to_sql("water_record", engine, if_exists="append", index=False)
+        logger.info("Data saved to PostgreSQL")
         return {
             "success": True,
             "total_rows": len(df_clean),
             "columns": list(df_clean.columns)
         }
     except Exception as e:
+        logger.error(f"Error in /upload_water_csv: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
 def health():
+    logger.info("Health check endpoint called")
     return {"status": "ok", "service": "water_cleaner"}
 
 def main():
+    logger.info("Main function called (currently a placeholder)")
     pass
 
 if __name__ == "__main__":
     main()
 
 router = app.router
-
-

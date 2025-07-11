@@ -170,6 +170,17 @@ async def air_cleaner_api(request: Request):
         save_to_postgres(mapping['WeatherCondition'], 'WeatherCondition', engine, if_exists='replace')
         save_to_postgres(mapping['AirQualityRecord'], 'AirQualityRecord', engine, if_exists='append')
         logger.info("Inserted all tables to PostgreSQL successfully")
+        # --- ĐẢM BẢO JSON-SAFE FLOATS ---
+        float_cols = [
+            'aqi', 'pm25', 'pm10', 'o3', 'no2', 'so2', 'co', 'nh3', 'temperature', 'humidity',
+            'pressure', 'wind_speed', 'wind_direction', 'visibility', 'latitude', 'longitude'
+        ]
+        for col in float_cols:
+            if col in df.columns:
+                df[col] = df[col].replace([np.inf, -np.inf], np.nan)
+                df[col] = df[col].apply(
+                    lambda x: float(x) if isinstance(x, (int, float)) and pd.notnull(x) and -1e308 < float(x) < 1e308 else None
+                )
     except Exception as e:
         logger.error(f"Error inserting to PostgreSQL: {e}", exc_info=True)
         return {
@@ -180,13 +191,19 @@ async def air_cleaner_api(request: Request):
     # --- FIX: Convert NaN/inf to None for JSON ---
     df.replace([np.inf, -np.inf], np.nan, inplace=True)
     df = df.where(pd.notnull(df), None)
+    # Ensure all float columns are within safe JSON range (final check)
+    for col in float_cols:
+        if col in df.columns:
+            # Chuyển mọi giá trị không phải số hoặc ngoài khoảng thành None
+            df[col] = df[col].apply(
+                lambda x: float(x) if isinstance(x, (int, float)) and pd.notnull(x) and -1e308 < float(x) < 1e308 else None
+            )
 
-    # Trả về dữ liệu sạch mới nhất để workflow có thể truyền sang process-data
+    # Trả về dữ liệu sạch mới nhất, KHÔNG truyền sang process-data
     return {
         "status": "success",
         "message": f"Processed {len(df)} records and inserted to PostgreSQL",
         "cleaned_file": str(cleaned_file),
-        "data": df.to_dict(orient="records"),
         "record_count": len(df)
     }
 
@@ -505,4 +522,5 @@ def main():
 if __name__ == '__main__':
     main()
 
+router = app.router
 router = app.router
