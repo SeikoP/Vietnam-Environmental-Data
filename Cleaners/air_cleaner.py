@@ -165,10 +165,10 @@ async def air_cleaner_api(request: Request):
             }
 
         # --- CHỈ GHI ĐÈ (replace) KHI LÀ LẦN ĐẦU HOẶC ĐƯỢC YÊU CẦU ---
-        save_to_postgres(mapping['City'], 'City', engine, if_exists='replace')
-        save_to_postgres(mapping['Source'], 'Source', engine, if_exists='replace')
-        save_to_postgres(mapping['WeatherCondition'], 'WeatherCondition', engine, if_exists='replace')
-        save_to_postgres(mapping['AirQualityRecord'], 'AirQualityRecord', engine, if_exists='append')
+        save_to_postgres(mapping['City'], 'city', engine, if_exists='replace')
+        save_to_postgres(mapping['Source'], 'source', engine, if_exists='replace')
+        save_to_postgres(mapping['WeatherCondition'], 'weathercondition', engine, if_exists='replace')
+        save_to_postgres(mapping['AirQualityRecord'], 'airqualityrecord', engine, if_exists='append')
         logger.info("Inserted all tables to PostgreSQL successfully")
         # --- ĐẢM BẢO JSON-SAFE FLOATS ---
         float_cols = [
