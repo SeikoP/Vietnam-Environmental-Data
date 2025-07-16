@@ -1,41 +1,179 @@
 # 🌏 Vietnam Environmental Data Platform
 
+
 ## 📌 Giới thiệu
 
 Nền tảng dữ liệu môi trường Việt Nam thu thập, làm sạch, chuẩn hóa, lưu trữ và cung cấp API dữ liệu không khí, nước, đất, khí hậu từ nhiều nguồn (OpenWeather, SoilGrids, NASA POWER, World Bank, ...). Hệ thống hỗ trợ workflow tự động (n8n), cảnh báo Discord, tích hợp BI, triển khai đa môi trường (local, cloud, Docker).
 
 ---
 
-## 🧱 Cấu trúc dự án
+## 🗺️ Sơ đồ luồng dữ liệu
+
+```mermaid
+flowchart LR
+    A[Crawler<br>Thu thập dữ liệu] -->|CSV| B[Cleaner<br>Làm sạch, chuẩn hóa]
+    B -->|Dữ liệu sạch| C[(PostgreSQL)]
+    C --> D[API<br>RESTful]
+    D --> E[Dashboard/Power BI]
+    D --> F[Workflow tự động (n8n)]
+    F --> G[Cảnh báo/Log/Trigger BI]
+```
+
+---
+
+## 🧩 Chi tiết các module
+
+### 1. Crawler
+- Thu thập dữ liệu từ nhiều nguồn (OpenWeather, SoilGrids, NASA POWER, World Bank...)
+- Hỗ trợ crawl song song, cache, retry, log chi tiết
+- Đầu ra: file CSV lưu tại `data_storage/<type>/raw/`
+
+### 2. Cleaner
+- Nhận file CSV, làm sạch, chuẩn hóa, phân tách bảng (City, Source, WeatherCondition...)
+- Mapping ID, kiểm tra ngoại lệ, log chi tiết
+- Lưu dữ liệu sạch vào PostgreSQL
+
+### 3. API
+- Cung cấp REST API cho dashboard, phân tích, cảnh báo, truy vấn dữ liệu sạch
+- Endpoint phân tích, sinh cảnh báo nếu vượt ngưỡng
+
+### 4. Workflow tự động (n8n)
+- n8n điều phối, lên lịch, gọi các API, gửi cảnh báo Discord, log thực thi, trigger Power BI
+
+---
+
+## 📦 Ví dụ sử dụng API
+
+### Lấy dữ liệu chất lượng không khí mới nhất
+```bash
+curl http://localhost:8000/air-quality
+```
+
+### Gửi dữ liệu để phân tích/cảnh báo
+```bash
+curl -X POST http://localhost:8000/process-data -H "Content-Type: application/json" -d '{"city": "Hanoi", "pm25": 80}'
+```
+
+### Chạy crawl dữ liệu không khí
+```bash
+curl -X POST http://localhost:8081/run_crawl
+```
+
+---
+
+## 🛠️ Hướng dẫn phát triển & đóng góp
+
+1. Fork và clone repo về máy
+2. Tạo branch mới cho mỗi tính năng/bugfix
+3. Viết code, commit theo chuẩn, push branch
+4. Tạo pull request, mô tả rõ thay đổi
+5. Chờ review & merge
+
+**Quy tắc đặt tên:**
+- Tên branch: `feature/<ten>`, `bugfix/<ten>`
+- Tên file/module: snake_case cho Python
+
+**Thêm crawler/cleaner mới:**
+- Tạo file mới trong thư mục tương ứng, kế thừa base class nếu có
+- Đăng ký route mới nếu là API
+
+---
+
+## � Kiểm thử & CI/CD
+
+- Viết test cho từng module (ưu tiên pytest)
+- Chạy test bằng lệnh:
+```bash
+pytest Air_Quality/
+```
+- Có thể tích hợp CI/CD với GitHub Actions để tự động test, build Docker, deploy
+
+---
+
+## 🏗️ Sơ đồ kiến trúc tổng thể
+
+```mermaid
+graph TD
+    subgraph Data Pipeline
+        A1[Crawler] --> B1[Cleaner] --> C1[(PostgreSQL)]
+    end
+    subgraph API Layer
+        C1 --> D1[REST API]
+    end
+    subgraph Automation
+        D1 --> E1[n8n Workflow]
+        E1 --> F1[Discord/Power BI/Log]
+    end
+    D1 --> G1[Dashboard]
+```
+
+---
+
+## �🧱 Cấu trúc dự án
 
 ```
-├── crawlers/
-│   ├── air/
-│   ├── water/
-│   ├── soil/
-│   └── climate/
-├── cleaners/
-│   ├── air_cleaner.py
-│   ├── water_cleaner.py
-│   ├── soil_cleaner.py
-│   └── climate_cleaner.py
-├── api/
-│   └── api.py
-├── data_storage/
-│   ├── air/raw/
-│   ├── water/raw/
-│   ├── soil/raw/
-│   └── climate/raw/
-├── data_cleaner/
-│   └── data/
-├── workflows/
-│   └── n8n/
-├── configs/
-│   ├── .env.example
-│   └── requirements.txt
-├── docker/
-│   ├── Dockerfile.*
-│   └── docker-compose.yml
+├── Air_Quality/
+│   ├── api/
+│   │   ├── api.py
+│   │   ├── routes/
+│   │   │   └── process.py
+│   │   └── utils/
+│   │       └── db.py
+│   ├── Cleaners/
+│   │   ├── __init__.py
+│   │   ├── air_cleaner.py
+│   │   ├── climate_cleaner.py
+│   │   ├── main_cleaner.py
+│   │   ├── soil_cleaner.py
+│   │   └── water_cleaner.py
+│   ├── config/
+│   │   └── locations_vietnam.json
+│   ├── configs/
+│   │   ├── locations_vietnam.json
+│   │   └── requirements.txt
+│   ├── crawlers/
+│   │   ├── air/
+│   │   │   └── air_crawler.py
+│   │   ├── climate/
+│   │   │   └── climate_crawler.py
+│   │   ├── soil/
+│   │   │   └── soil_crawler.py
+│   │   └── water/
+│   │       ├── locations_vietnam.json
+│   │       └── water_crawler.py
+│   ├── data_cleaner/
+│   │   └── data/
+│   │       ├── cleaned_air_quality.csv
+│   │       └── data_tranform/
+│   │           ├── AirQualityRecord.csv
+│   │           ├── City.csv
+│   │           ├── Source.csv
+│   │           └── WeatherCondition.csv
+│   ├── data_storage/
+│   │   ├── air/
+│   │   │   ├── cleaned_air_quality.csv
+│   │   │   ├── data_tranform/
+│   │   │   └── raw/
+│   │   ├── climate/
+│   │   │   └── raw/
+│   │   ├── soil/
+│   │   │   ├── cache/
+│   │   │   └── raw/
+│   │   └── water/
+│   │       └── raw/
+│   ├── docker/
+│   │   ├── docker-compose.yml
+│   │   ├── Dockerfile.air_crawler
+│   │   ├── Dockerfile.api
+│   │   ├── Dockerfile.cleaner
+│   │   ├── Dockerfile.climate_crawler
+│   │   ├── Dockerfile.soil_crawler
+│   │   └── Dockerfile.water_crawler
+│   └── workflow/
+│       └── n8n_data/
+│           ├── config
+│           ├── database.sqlite
+│           └── ...
 └── README.md
 ```
 
@@ -83,57 +221,58 @@ Nền tảng dữ liệu môi trường Việt Nam thu thập, làm sạch, chu�
 
 ## 🏁 Hướng dẫn cài đặt & chạy
 
+
 ### 1. Cài đặt thư viện Python
 
 ```bash
-pip install -r configs/requirements.txt
+pip install -r Air_Quality/configs/requirements.txt
 ```
 
 ### 2. Cấu hình biến môi trường
 
-- Tạo file `.env` từ `configs/.env.example`.
+- Tạo file `.env` từ `Air_Quality/configs/.env.example`.
 - Thiết lập các API key cần thiết (OpenWeather, SoilGrids, ...).
 
 ### 3. Tạo cấu trúc thư mục (nếu chưa có)
 
 **Windows PowerShell:**
 ```powershell
-New-Item -ItemType Directory -Force -Path crawlers\air
-New-Item -ItemType Directory -Force -Path crawlers\water
-New-Item -ItemType Directory -Force -Path crawlers\soil
-New-Item -ItemType Directory -Force -Path crawlers\climate
-New-Item -ItemType Directory -Force -Path cleaners
-New-Item -ItemType Directory -Force -Path api
-New-Item -ItemType Directory -Force -Path data_storage\air\raw
-New-Item -ItemType Directory -Force -Path data_storage\water\raw
-New-Item -ItemType Directory -Force -Path data_storage\soil\raw
-New-Item -ItemType Directory -Force -Path data_storage\climate\raw
-New-Item -ItemType Directory -Force -Path data_cleaner\data
-New-Item -ItemType Directory -Force -Path workflows\n8n
-New-Item -ItemType Directory -Force -Path configs
-New-Item -ItemType Directory -Force -Path docker
+New-Item -ItemType Directory -Force -Path Air_Quality\crawlers\air
+New-Item -ItemType Directory -Force -Path Air_Quality\crawlers\water
+New-Item -ItemType Directory -Force -Path Air_Quality\crawlers\soil
+New-Item -ItemType Directory -Force -Path Air_Quality\crawlers\climate
+New-Item -ItemType Directory -Force -Path Air_Quality\Cleaners
+New-Item -ItemType Directory -Force -Path Air_Quality\api
+New-Item -ItemType Directory -Force -Path Air_Quality\data_storage\air\raw
+New-Item -ItemType Directory -Force -Path Air_Quality\data_storage\water\raw
+New-Item -ItemType Directory -Force -Path Air_Quality\data_storage\soil\raw
+New-Item -ItemType Directory -Force -Path Air_Quality\data_storage\climate\raw
+New-Item -ItemType Directory -Force -Path Air_Quality\data_cleaner\data
+New-Item -ItemType Directory -Force -Path Air_Quality\workflow\n8n_data
+New-Item -ItemType Directory -Force -Path Air_Quality\configs
+New-Item -ItemType Directory -Force -Path Air_Quality\docker
 ```
 
 **Linux/macOS:**
 ```bash
-mkdir -p crawlers/air crawlers/water crawlers/soil crawlers/climate
-mkdir -p cleaners api
-mkdir -p data_storage/air/raw data_storage/water/raw data_storage/soil/raw data_storage/climate/raw
-mkdir -p data_cleaner/data workflows/n8n configs docker
+mkdir -p Air_Quality/crawlers/air Air_Quality/crawlers/water Air_Quality/crawlers/soil Air_Quality/crawlers/climate
+mkdir -p Air_Quality/Cleaners Air_Quality/api
+mkdir -p Air_Quality/data_storage/air/raw Air_Quality/data_storage/water/raw Air_Quality/data_storage/soil/raw Air_Quality/data_storage/climate/raw
+mkdir -p Air_Quality/data_cleaner/data Air_Quality/workflow/n8n_data Air_Quality/configs Air_Quality/docker
 ```
 
 ### 4. Chạy từng service (local)
 
 ```bash
-uvicorn crawlers.air.air_crawler:app --reload --port 8081
-uvicorn crawlers.water.water_crawler:app --reload --port 8082
-uvicorn crawlers.soil.soil_crawler:app --reload --port 8083
-uvicorn crawlers.climate.climate_crawler:app --reload --port 8084
-uvicorn cleaners.air_cleaner:app --reload --port 8091
-uvicorn cleaners.water_cleaner:app --reload --port 8092
-uvicorn cleaners.soil_cleaner:app --reload --port 8093
-uvicorn cleaners.climate_cleaner:app --reload --port 8094
-uvicorn api.api:app --reload --port 8000
+uvicorn Air_Quality.crawlers.air.air_crawler:app --reload --port 8081
+uvicorn Air_Quality.crawlers.water.water_crawler:app --reload --port 8082
+uvicorn Air_Quality.crawlers.soil.soil_crawler:app --reload --port 8083
+uvicorn Air_Quality.crawlers.climate.climate_crawler:app --reload --port 8084
+uvicorn Air_Quality.Cleaners.air_cleaner:app --reload --port 8091
+uvicorn Air_Quality.Cleaners.water_cleaner:app --reload --port 8092
+uvicorn Air_Quality.Cleaners.soil_cleaner:app --reload --port 8093
+uvicorn Air_Quality.Cleaners.climate_cleaner:app --reload --port 8094
+uvicorn Air_Quality.api.api:app --reload --port 8000
 ```
 
 ### 5. (Tùy chọn) Chạy workflow tự động với n8n
@@ -196,7 +335,7 @@ services:
     networks:
       - air_quality_network
     volumes:
-      - ../data_storage/air/raw:/app/data_export
+      - ../Air_Quality/data_storage/air/raw:/app/data_export
 
   water_crawler:
     build:
@@ -209,7 +348,7 @@ services:
     networks:
       - air_quality_network
     volumes:
-      - ../data_storage/water/raw:/app/data_export
+      - ../Air_Quality/data_storage/water/raw:/app/data_export
 
   soil_crawler:
     build:
@@ -222,7 +361,7 @@ services:
     networks:
       - air_quality_network
     volumes:
-      - ../data_storage/soil/raw:/app/data_export
+      - ../Air_Quality/data_storage/soil/raw:/app/data_export
 
   climate_crawler:
     build:
@@ -235,7 +374,7 @@ services:
     networks:
       - air_quality_network
     volumes:
-      - ../data_storage/climate/raw:/app/data_export
+      - ../Air_Quality/data_storage/climate/raw:/app/data_export
 
   n8n:
     image: n8nio/n8n
@@ -272,7 +411,7 @@ services:
     depends_on:
       - postgres
     volumes:
-      - ../data_cleaner/data:/app/data
+      - ../Air_Quality/data_cleaner/data:/app/data
     networks:
       - air_quality_network
 
@@ -289,42 +428,45 @@ networks:
 ```
 
 **Lưu ý:**  
-- Mount các thư mục `data_storage/*/raw` từ host vào container `/app/data_export` để backup dữ liệu crawl.
-- Mount `data_cleaner/data` từ host vào `/app/data` để backup dữ liệu sạch và bảng transform từ cleaner.
+- Mount các thư mục `Air_Quality/data_storage/*/raw` từ host vào container `/app/data_export` để backup dữ liệu crawl.
+- Mount `Air_Quality/data_cleaner/data` từ host vào `/app/data` để backup dữ liệu sạch và bảng transform từ cleaner.
 - Khi cần backup, chỉ cần copy các thư mục này trên máy host.
 
 ---
 
-## ✅ Yêu cầu hệ thống
+
+## ✅ Yêu cầu hệ thống (đã kiểm chứng)
 
 - Python 3.9+
 - PostgreSQL 13+
-- FastAPI, SQLAlchemy, Pandas, Uvicorn, requests, dotenv, geopandas, shapely
-- (Tùy chọn) Google API Client, Docker, n8n, Power BI
-- (Tùy chọn) Các API key cho nước, đất, khí hậu nếu có
+- FastAPI, SQLAlchemy, Pandas, Uvicorn, requests, dotenv
+- Docker (chạy production hoặc dev nhiều service)
+- n8n (workflow tự động)
+- API key cho OpenWeather, SoilGrids (nếu crawl dữ liệu tương ứng)
 
 ---
 
-## 📊 Ứng dụng & mở rộng
 
-- Kết nối Power BI lấy dữ liệu real-time thông qua các endpoint JSON.
-- Triển khai trên cloud (Heroku, Railway, EC2, Azure).
-- Lên lịch tự động bằng n8n, Airflow hoặc `schedule`.
-- Mở rộng thêm các nguồn dữ liệu môi trường khác, tích hợp AI phân tích dự báo.
+## 📊 Hệ thống đã và đang làm được
+
+- Thu thập dữ liệu không khí, nước, đất, khí hậu từ nhiều nguồn mở (OpenWeather, SoilGrids, NASA POWER...)
+- Làm sạch, chuẩn hóa, phân tách bảng dữ liệu, mapping ID, kiểm tra ngoại lệ
+- Lưu trữ dữ liệu sạch vào PostgreSQL
+- Cung cấp REST API cho dashboard, truy vấn, phân tích, cảnh báo
+- Tích hợp workflow tự động với n8n: lên lịch crawl, clean, gửi cảnh báo Discord, log thực thi
+- Hỗ trợ backup dữ liệu crawl và dữ liệu sạch qua volume Docker
 
 ---
+
 
 ## 📝 Lưu ý triển khai thực tế
 
-- Đảm bảo cấu hình `.env` đúng, bảo mật các API key.
-- Kiểm tra quyền ghi thư mục `data_storage/`, `data_crawler/`, `data_cleaner/`.
-- Khi chạy Docker, mount volume nếu muốn giữ dữ liệu ngoài container.
-- Đảm bảo PostgreSQL đã khởi động trước khi cleaner hoặc API ghi dữ liệu.
-- Đọc kỹ log khi gặp lỗi, kiểm tra kết nối mạng tới các API nguồn.
+- Đảm bảo cấu hình `.env` đúng, bảo mật các API key
+- Kiểm tra quyền ghi thư mục `data_storage/`, `data_cleaner/`
+- Khi chạy Docker, mount volume để giữ dữ liệu ngoài container
+- Đảm bảo PostgreSQL đã khởi động trước khi cleaner hoặc API ghi dữ liệu
+- Đọc kỹ log khi gặp lỗi, kiểm tra kết nối mạng tới các API nguồn
 
 ---
 
-## 🧑‍💻 Tác giả
 
-Nguyễn Hữu Cường  
-Dự án tốt nghiệp - Phân tích dữ liệu 2025
