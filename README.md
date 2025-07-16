@@ -11,12 +11,12 @@ Nền tảng dữ liệu môi trường Việt Nam thu thập, làm sạch, chu�
 
 ```mermaid
 flowchart LR
-    A[Crawler<br>Thu thập dữ liệu] -->|CSV| B[Cleaner<br>Làm sạch, chuẩn hóa]
-    B -->|Dữ liệu sạch| C[(PostgreSQL)]
-    C --> D[API<br>RESTful]
-    D --> E[Dashboard/Power BI]
-    D --> F[Workflow tự động (n8n)]
-    F --> G[Cảnh báo/Log/Trigger BI]
+    CRAWLER["Crawler: Thu thập dữ liệu"] -->|"CSV"| CLEANER["Cleaner: Làm sạch, chuẩn hóa"]
+    CLEANER -->|"Dữ liệu sạch"| DB[(PostgreSQL)]
+    DB --> API["API"]
+    API --> DASH["Dashboard"]
+    API --> N8N["n8n Workflow"]
+    N8N --> ALERT["Cảnh báo/Log/Trigger"]
 ```
 
 ---
