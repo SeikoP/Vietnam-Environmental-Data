@@ -10,13 +10,15 @@ Nền tảng dữ liệu môi trường Việt Nam thu thập, làm sạch, chu�
 ## 🗺️ Sơ đồ luồng dữ liệu
 
 ```mermaid
-flowchart LR
-    CRAWLER["Crawler: Thu thập dữ liệu"] -->|"CSV"| CLEANER["Cleaner: Làm sạch, chuẩn hóa"]
+flowchart TD
+    N8N[n8n Workflow] --> CRAWLER["Crawler"]
+    CRAWLER -->|"CSV"| CLEANER["Cleaner"]
     CLEANER -->|"Dữ liệu sạch"| DB[(PostgreSQL)]
+    N8N --> CLEANER
     DB --> API["API"]
+    DB --> POWERBI["Power BI"]
     API --> DASH["Dashboard"]
-    API --> N8N["n8n Workflow"]
-    N8N --> ALERT["Cảnh báo/Log/Trigger"]
+    N8N --> ALERT["Cảnh báo/Log"]
 ```
 
 ---
@@ -58,56 +60,6 @@ curl -X POST http://localhost:8000/process-data -H "Content-Type: application/js
 ```bash
 curl -X POST http://localhost:8081/run_crawl
 ```
-
----
-
-## 🛠️ Hướng dẫn phát triển & đóng góp
-
-1. Fork và clone repo về máy
-2. Tạo branch mới cho mỗi tính năng/bugfix
-3. Viết code, commit theo chuẩn, push branch
-4. Tạo pull request, mô tả rõ thay đổi
-5. Chờ review & merge
-
-**Quy tắc đặt tên:**
-- Tên branch: `feature/<ten>`, `bugfix/<ten>`
-- Tên file/module: snake_case cho Python
-
-**Thêm crawler/cleaner mới:**
-- Tạo file mới trong thư mục tương ứng, kế thừa base class nếu có
-- Đăng ký route mới nếu là API
-
----
-
-## � Kiểm thử & CI/CD
-
-- Viết test cho từng module (ưu tiên pytest)
-- Chạy test bằng lệnh:
-```bash
-pytest Air_Quality/
-```
-- Có thể tích hợp CI/CD với GitHub Actions để tự động test, build Docker, deploy
-
----
-
-## 🏗️ Sơ đồ kiến trúc tổng thể
-
-```mermaid
-graph TD
-    subgraph Data Pipeline
-        A1[Crawler] --> B1[Cleaner] --> C1[(PostgreSQL)]
-    end
-    subgraph API Layer
-        C1 --> D1[REST API]
-    end
-    subgraph Automation
-        D1 --> E1[n8n Workflow]
-        E1 --> F1[Discord/Power BI/Log]
-    end
-    D1 --> G1[Dashboard]
-```
-
----
 
 ## �🧱 Cấu trúc dự án
 
