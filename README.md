@@ -17,7 +17,7 @@ flowchart TD
     N8N --> CLEANER
     DB --> API["API"]
     DB --> POWERBI["Power BI"]
-    API --> DASH["Dashboard"]
+    POWERBI["Power BI"] --> DASH["Dashboard"]
     N8N --> ALERT["Cảnh báo/Log"]
 ```
 
