@@ -10,15 +10,29 @@ Nền tảng dữ liệu môi trường Việt Nam thu thập, làm sạch, chu�
 ## 🗺️ Sơ đồ luồng dữ liệu
 
 ```mermaid
-flowchart TD
-    N8N[n8n Workflow] --> CRAWLER["Crawler"]
-    CRAWLER -->|"CSV"| CLEANER["Cleaner"]
-    CLEANER -->|"Dữ liệu sạch"| DB[(PostgreSQL)]
-    N8N --> CLEANER
-    DB --> API["API"]
-    DB --> POWERBI["Power BI"]
-    API --> DASH["Dashboard"]
-    N8N --> ALERT["Cảnh báo/Log"]
+flowchart LR
+    subgraph A[n8n Workflow]
+        N8N[N8N]
+        N8N --> CRAWLER[Crawler - Thu thập]
+        N8N --> CLEANER[Cleaner - Làm sạch]
+        N8N --> ALERT[Cảnh báo / Log]
+    end
+
+    CRAWLER -->|"CSV"| CLEANER
+    CLEANER -->|"Dữ liệu sạch"| DB[PostgreSQL - Lưu trữ]
+
+    DB --> API[API - Cung cấp dữ liệu]
+    DB --> POWERBI[Power BI - Trực quan hóa]
+    POWERBI --> DASH[Dashboard - Báo cáo]
+
+    style N8N fill:#fff3cd,stroke:#ffecb5,stroke-width:2px
+    style CRAWLER fill:#d1e7dd,stroke:#badbcc,stroke-width:2px
+    style CLEANER fill:#cfe2ff,stroke:#9ec5fe,stroke-width:2px
+    style DB fill:#e2e3e5,stroke:#b6b8ba,stroke-width:2px
+    style API fill:#f8d7da,stroke:#f5c2c7,stroke-width:2px
+    style POWERBI fill:#e2d9f3,stroke:#c9b6ec,stroke-width:2px
+    style DASH fill:#d1ecf1,stroke:#bee5eb,stroke-width:2px
+    style ALERT fill:#f8d7da,stroke:#f5c2c7,stroke-width:2px
 ```
 
 ---
